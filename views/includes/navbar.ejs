@@ -1,0 +1,123 @@
+<nav class="navbar navbar-expand-lg sticky-top" id="mainNavbar">
+  <div class="container-fluid px-3">
+
+    <!-- Brand -->
+    <a class="navbar-brand" href="/">
+      <div class="brand-icon"><i class="fa-solid fa-mountain-sun"></i></div>
+      <span class="brand-text">TravelByChance</span>
+    </a>
+
+    <!-- Mobile toggle -->
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarContent">
+
+      <!-- Search Bar with Autocomplete -->
+      <form class="d-flex mx-auto my-2 my-lg-0" role="search" action="/listings" method="GET" id="search-form" autocomplete="off">
+        <div class="search-wrapper">
+          <input
+            name="q"
+            id="search-input"
+            class="form-control search-inp"
+            type="search"
+            placeholder="Search cities, hotels..."
+            aria-label="Search"
+            value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>"
+          />
+          <div id="suggestions-list"></div>
+        </div>
+        <button class="btn search-btn" type="submit" id="search-submit-btn">
+          <i class="fa-solid fa-magnifying-glass me-1"></i>Search
+        </button>
+      </form>
+
+      <!-- Right Nav -->
+      <div class="navbar-nav d-flex flex-row align-items-center gap-2 ms-lg-2">
+        <a class="btn-nav-action btn-nav-ghost" href="/listings">
+          <i class="fa-solid fa-compass me-1"></i>Explore
+        </a>
+        <% if(typeof currUser !== 'undefined' && currUser) { %>
+          <% if(currUser.role === 'admin') { %>
+            <a class="btn-nav-action btn-nav-outline" href="/listings/new">
+              <i class="fa-solid fa-plus me-1"></i>List Property
+            </a>
+          <% } %>
+          <div class="dropdown">
+            <button class="btn-nav-action btn-nav-ghost dropdown-toggle" type="button" data-bs-toggle="dropdown">
+              <div class="user-avatar"><%= currUser.username.charAt(0).toUpperCase() %></div>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:12px; min-width:180px;">
+              <li><span class="dropdown-item-text text-muted" style="font-size:0.8rem; padding: 0.5rem 1rem;">Signed in as</span></li>
+              <li>
+                <span class="dropdown-item-text fw-bold" style="padding: 0 1rem 0.5rem;">
+                  <%= currUser.username %> 
+                  <span class="badge rounded-pill <%= currUser.role === 'admin' ? 'bg-danger' : 'bg-primary' %>" style="font-size:0.65rem; text-transform:uppercase; margin-left:4px; font-weight:700;">
+                    <%= currUser.role %>
+                  </span>
+                </span>
+              </li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <% if (currUser.role === 'admin') { %>
+                <li><a class="dropdown-item fw-bold text-danger" href="/admin"><i class="fa-solid fa-gauge-high me-2 text-danger"></i>Admin Panel</a></li>
+                <li><a class="dropdown-item" href="/listings/new"><i class="fa-solid fa-plus me-2 text-muted"></i>Add listing</a></li>
+              <% } %>
+              <li><a class="dropdown-item" href="/bookings"><i class="fa-solid fa-calendar-check me-2 text-muted"></i>My Bookings</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><a class="dropdown-item text-danger" href="/logout"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
+            </ul>
+          </div>
+        <% } else { %>
+          <a class="btn-nav-action btn-nav-outline" href="/login">Login</a>
+          <a class="btn-nav-action btn-nav-primary" href="/signup">Sign up</a>
+        <% } %>
+      </div>
+
+    </div>
+  </div>
+</nav>
+
+<script>
+(function() {
+  const input = document.getElementById('search-input');
+  const list = document.getElementById('suggestions-list');
+  let debounceTimer;
+
+  if (!input || !list) return;
+
+  input.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    const q = this.value.trim();
+    if (q.length < 2) { list.classList.remove('show'); list.innerHTML = ''; return; }
+
+    debounceTimer = setTimeout(() => {
+      fetch(`/api/search-suggestions?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.length) { list.classList.remove('show'); list.innerHTML = ''; return; }
+          list.innerHTML = data.map(item => `
+            <a href="/listings/${item._id}" class="suggestion-item">
+              <div class="suggestion-icon"><i class="fa-solid fa-location-dot"></i></div>
+              <div>
+                <div class="suggestion-text">${item.title}</div>
+                <div class="suggestion-sub"><i class="fa-solid fa-map-pin" style="font-size:0.7rem;color:#FF5A5F;margin-right:3px;"></i>${item.location}, ${item.country}</div>
+              </div>
+            </a>
+          `).join('');
+          list.classList.add('show');
+        }).catch(() => { list.classList.remove('show'); });
+    }, 220);
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#search-form')) {
+      list.classList.remove('show');
+    }
+  });
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { list.classList.remove('show'); }
+  });
+})();
+</script>

@@ -1,0 +1,77 @@
+<% layout('/layouts/boilerplate') %>
+
+<div class="container">
+  <div class="form-page-wrapper animate-fade-up">
+    <div class="text-center mb-4">
+      <div style="width:56px; height:56px; background:linear-gradient(135deg,#FF5A5F,#ff8f92); border-radius:16px; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem; color:white; font-size:1.4rem;">
+        <i class="fa-solid fa-house-circle-plus"></i>
+      </div>
+      <h1 class="form-page-title">List Your Property</h1>
+      <p class="form-page-subtitle">Share your space with travellers from across India and the world</p>
+    </div>
+
+    <form method="POST" action="/listings" novalidate class="needs-validation" enctype="multipart/form-data">
+
+      <div class="mb-3">
+        <label for="title" class="form-label">Property Title *</label>
+        <input name="listing[title]" id="title" placeholder="e.g. Cozy Sea-View Studio in Bandra" type="text" class="form-control" required />
+        <div class="valid-feedback">Looks great!</div>
+        <div class="invalid-feedback">Please enter a title.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="description" class="form-label">Description *</label>
+        <textarea name="listing[description]" id="description" placeholder="Describe your property — what makes it special, nearby attractions, house rules..." class="form-control" rows="4" required></textarea>
+        <div class="invalid-feedback">Please add a description.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="image" class="form-label">Property Image *</label>
+        <input name="listing[image]" id="image" type="file" class="form-control" accept="image/*" required />
+        <div class="form-text" style="font-size:0.78rem; color:#9ca3af;">Recommended: 1200×800px, max 5MB</div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-5">
+          <label for="price" class="form-label">Price per Night (₹) *</label>
+          <input name="listing[price]" id="price" type="number" placeholder="e.g. 3500" class="form-control" required min="1" />
+          <div class="invalid-feedback">Please enter a valid price.</div>
+        </div>
+        <div class="col-md-7">
+          <label for="country" class="form-label">Country *</label>
+          <input name="listing[country]" id="country" placeholder="India" type="text" class="form-control" required />
+          <div class="invalid-feedback">Please enter the country.</div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="location" class="form-label">City / Location *</label>
+        <input name="listing[location]" id="location" placeholder="e.g. Mumbai, Goa, Manali, Jaipur..." type="text" class="form-control" required />
+        <div class="invalid-feedback">Please enter a location.</div>
+      </div>
+
+      <div class="mb-4">
+        <label for="category" class="form-label">Category *</label>
+        <select name="listing[category]" id="category" class="form-select" required>
+          <option value="" disabled selected>Select a category</option>
+          <option value="Trending">🔥 Trending</option>
+          <option value="Rooms">🛏️ Rooms</option>
+          <option value="Iconic Cities">🏙️ Iconic Cities</option>
+          <option value="Mountains">⛰️ Mountains</option>
+          <option value="Castles">🏰 Castles</option>
+          <option value="Amazing Pools">🏊 Amazing Pools</option>
+          <option value="Camping">⛺ Camping</option>
+          <option value="Farms">🐄 Farms</option>
+          <option value="Arctic">❄️ Arctic</option>
+          <option value="Domes">🏠 Domes</option>
+          <option value="Boats">⛵ Boats</option>
+        </select>
+        <div class="invalid-feedback">Please select a category.</div>
+      </div>
+
+      <button class="btn add-btn" type="submit">
+        <i class="fa-solid fa-plus me-2"></i>List My Property
+      </button>
+    </form>
+  </div>
+</div>

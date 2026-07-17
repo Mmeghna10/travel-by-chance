@@ -1,0 +1,157 @@
+<% layout('/layouts/boilerplate') %>
+
+<div class="container py-5 animate-fade-up">
+  <!-- Dashboard Header -->
+  <div class="row mb-5 text-center text-md-start align-items-center">
+    <div class="col-md-8">
+      <h1 class="display-6 fw-bold mb-1" style="color: #1a1a2e; display: flex; align-items: center; gap: 10px; justify-content: center; justify-content: md-start;">
+        <i class="fa-solid fa-gauge-high text-danger"></i> Admin Control Center
+      </h1>
+      <p class="text-muted mb-0">Overview of stays, reservations, and users on TravelByChance</p>
+    </div>
+    <div class="col-md-4 text-center text-md-end mt-3 mt-md-0">
+      <a href="/listings/new" class="btn btn-danger px-4 py-2" style="border-radius: 50px; font-weight: 600; background: #FF5A5F; border: none;">
+        <i class="fa-solid fa-plus me-2"></i>Add Stay Listing
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="row g-4 mb-5">
+    <div class="col-12 col-sm-6 col-lg-4">
+      <div class="card border-0 shadow-sm p-4 h-100 position-relative overflow-hidden" style="border-radius: 16px; background: linear-gradient(135deg, #1e3c72, #2a5298); color: white;">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h6 class="text-white-50 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px;">Stays Listed</h6>
+            <h2 class="display-5 fw-bold mb-0"><%= listingsCount %></h2>
+          </div>
+          <div style="font-size: 3rem; opacity: 0.2;">
+            <i class="fa-solid fa-hotel"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-12 col-sm-6 col-lg-4">
+      <div class="card border-0 shadow-sm p-4 h-100 position-relative overflow-hidden" style="border-radius: 16px; background: linear-gradient(135deg, #FF5A5F, #ff7b80); color: white;">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h6 class="text-white-50 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px;">Total Reservations</h6>
+            <h2 class="display-5 fw-bold mb-0"><%= bookingsCount %></h2>
+          </div>
+          <div style="font-size: 3rem; opacity: 0.2;">
+            <i class="fa-solid fa-calendar-check"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-lg-4">
+      <div class="card border-0 shadow-sm p-4 h-100 position-relative overflow-hidden" style="border-radius: 16px; background: linear-gradient(135deg, #11998e, #38ef7d); color: white;">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h6 class="text-white-50 text-uppercase fw-bold" style="font-size: 0.75rem; letter-spacing: 1px;">Registered Users</h6>
+            <h2 class="display-5 fw-bold mb-0"><%= usersCount %></h2>
+          </div>
+          <div style="font-size: 3rem; opacity: 0.2;">
+            <i class="fa-solid fa-users"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Lists and Bookings -->
+  <div class="row">
+    <!-- Listings Panel -->
+    <div class="col-12 mb-5">
+      <div class="card border-0 shadow-sm p-4" style="border-radius: 16px;">
+        <h4 class="fw-bold mb-4" style="color: #1a1a2e;"><i class="fa-solid fa-list me-2 text-primary"></i>Manage Properties</h4>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Stay Title</th>
+                <th>Owner / Host</th>
+                <th>Location</th>
+                <th>Category</th>
+                <th>Price / Night</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% for(let listing of listings) { %>
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-3">
+                      <img src="<%= listing.image?.url || listing.image %>" class="rounded" style="width: 50px; height: 40px; object-fit: cover;" alt="">
+                      <span class="fw-semibold text-dark"><%= listing.title %></span>
+                    </div>
+                  </td>
+                  <td><%= listing.owner ? listing.owner.username : 'Unknown' %></td>
+                  <td><i class="fa-solid fa-location-dot text-muted me-1"></i><%= listing.location %></td>
+                  <td><span class="badge bg-secondary"><%= listing.category %></span></td>
+                  <td>₹<%= listing.price.toLocaleString("en-IN") %></td>
+                  <td class="text-end">
+                    <a href="/listings/<%= listing._id %>" class="btn btn-outline-secondary btn-sm px-3" style="border-radius: 50px;">View</a>
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bookings Panel -->
+    <div class="col-12">
+      <div class="card border-0 shadow-sm p-4" style="border-radius: 16px;">
+        <h4 class="fw-bold mb-4" style="color: #1a1a2e;"><i class="fa-solid fa-calendar-check me-2 text-success"></i>System-wide Reservations</h4>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Stay Property</th>
+                <th>Customer</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
+                <th>Total Price</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (bookings.length === 0) { %>
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">No reservations found in the system.</td>
+                </tr>
+              <% } else { %>
+                <% for(let booking of bookings) { %>
+                  <tr>
+                    <td>
+                      <% if (booking.listing) { %>
+                        <a href="/listings/<%= booking.listing._id %>" class="text-decoration-none fw-semibold text-dark">
+                          <%= booking.listing.title %>
+                        </a>
+                      <% } else { %>
+                        <span class="text-muted">Deleted Stay</span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <span class="fw-semibold text-muted">@<%= booking.user ? booking.user.username : 'Deleted User' %></span>
+                    </td>
+                    <td><%= booking.checkIn.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) %></td>
+                    <td><%= booking.checkOut.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) %></td>
+                    <td class="fw-bold text-danger">₹<%= booking.totalPrice.toLocaleString("en-IN") %></td>
+                    <td>
+                      <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">Active</span>
+                    </td>
+                  </tr>
+                <% } %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

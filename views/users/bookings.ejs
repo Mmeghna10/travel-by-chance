@@ -1,0 +1,76 @@
+<% layout('/layouts/boilerplate') %>
+
+<div class="container py-5 animate-fade-up">
+  <div class="row mb-4">
+    <div class="col text-center text-md-start">
+      <h1 class="display-6 fw-bold mb-1" style="color: #1a1a2e;">My Reservations</h1>
+      <p class="text-muted">Manage your upcoming stays and travel history with TravelByChance</p>
+    </div>
+  </div>
+
+  <% if (bookings.length === 0) { %>
+    <div class="text-center py-5 shadow-sm bg-white" style="border-radius: 16px; border: 1px solid rgba(0,0,0,0.05);">
+      <div class="mb-4 text-muted">
+        <i class="fa-solid fa-calendar-xmark" style="font-size: 4rem; color: #cbd5e1;"></i>
+      </div>
+      <h3 class="fw-bold" style="color: #1a1a2e;">No bookings yet</h3>
+      <p class="text-muted px-3" style="max-width: 480px; margin: 0 auto 1.5rem;">
+        You haven't made any reservations yet. Start exploring our premium selected stays to plan your next getaway!
+      </p>
+      <a href="/listings" class="btn btn-primary px-4 py-2" style="border-radius: 50px; background: #FF5A5F; border: none; font-weight: 600;">
+        <i class="fa-solid fa-compass me-2"></i>Explore Stays
+      </a>
+    </div>
+  <% } else { %>
+    <div class="row g-4">
+      <% for (let booking of bookings) { %>
+        <% if (booking.listing) { %>
+          <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 position-relative overflow-hidden" style="border-radius: 16px; transition: transform 0.2s;">
+              <!-- Listing Image -->
+              <div style="height: 200px; overflow: hidden; position: relative;">
+                <img src="<%= booking.listing.image?.url || booking.listing.image %>" class="w-100 h-100" style="object-fit: cover;" alt="<%= booking.listing.title %>">
+                <span class="position-absolute top-3 end-3 badge bg-success" style="font-size: 0.78rem; border-radius: 50px; padding: 0.4rem 0.8rem; top: 12px; right: 12px;">
+                  <i class="fa-solid fa-check-double me-1"></i>Confirmed
+                </span>
+              </div>
+              
+              <!-- Card Body -->
+              <div class="card-body d-flex flex-column p-4">
+                <div class="d-flex align-items-center gap-1 text-muted mb-2" style="font-size: 0.82rem;">
+                  <i class="fa-solid fa-location-dot" style="color: #FF5A5F;"></i>
+                  <span><%= booking.listing.location %>, <%= booking.listing.country %></span>
+                </div>
+                
+                <h5 class="card-title fw-bold mb-3 text-truncate" style="color: #1a1a2e;"><%= booking.listing.title %></h5>
+                
+                <!-- Dates Grid -->
+                <div class="p-3 bg-light rounded-3 mb-3" style="font-size: 0.85rem;">
+                  <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted"><i class="fa-solid fa-calendar me-1"></i>Check-in:</span>
+                    <span class="fw-semibold text-dark"><%= booking.checkIn.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) %></span>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <span class="text-muted"><i class="fa-solid fa-calendar me-1"></i>Check-out:</span>
+                    <span class="fw-semibold text-dark"><%= booking.checkOut.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) %></span>
+                  </div>
+                </div>
+
+                <!-- Price Row -->
+                <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="text-muted d-block" style="font-size: 0.75rem;">Total Paid</span>
+                    <span class="fw-bold fs-5" style="color: #FF5A5F;">₹<%= booking.totalPrice.toLocaleString("en-IN") %></span>
+                  </div>
+                  <a href="/listings/<%= booking.listing._id %>" class="btn btn-outline-secondary btn-sm px-3 py-1.5" style="border-radius: 50px; font-size: 0.8rem; font-weight: 600;">
+                    View Details
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      <% } %>
+    </div>
+  <% } %>
+</div>

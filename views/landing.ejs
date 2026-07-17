@@ -1,0 +1,323 @@
+<% layout('/layouts/landing_boilerplate') %>
+
+<!-- Landing Hero Section -->
+<div class="landing-hero">
+  <div class="hero-overlay"></div>
+  <div class="hero-content container text-center text-white">
+    <div class="badge-hero animate-fade-in">
+      <i class="fa-solid fa-compass spin-slow me-2"></i>Discover the Extraordinary
+    </div>
+    <h1 class="hero-title-main animate-fade-in-delayed">
+      Travel By Chance<br><span>Discover By Choice</span>
+    </h1>
+    <p class="hero-subtitle-main animate-fade-in-delayed-2">
+      Unlock handpicked cabins, tropical villas, and unique stays across the globe.
+    </p>
+
+    <!-- Glassmorphic Search Container -->
+    <div class="search-glass-card mt-5 mx-auto animate-slide-up">
+      <form action="/listings" method="GET" class="row g-3 align-items-center">
+        <div class="col-md-5 text-start">
+          <label class="form-label-custom"><i class="fa-solid fa-location-dot me-2 text-primary"></i>Where to?</label>
+          <input type="text" name="q" class="form-control-custom" placeholder="Search cities, states, countries...">
+        </div>
+        <div class="col-md-4 text-start border-start-custom">
+          <label class="form-label-custom"><i class="fa-solid fa-tags me-2 text-accent"></i>Stays Type</label>
+          <select name="category" class="form-select-custom">
+            <option value="">All Categories</option>
+            <option value="Trending">Trending</option>
+            <option value="Rooms">Rooms</option>
+            <option value="Iconic Cities">Iconic Cities</option>
+            <option value="Mountains">Mountains</option>
+            <option value="Castles">Castles</option>
+            <option value="Amazing Pools">Amazing Pools</option>
+            <option value="Camping">Camping</option>
+            <option value="Farms">Farms</option>
+            <option value="Arctic">Arctic</option>
+            <option value="Domes">Domes</option>
+            <option value="Boats">Boats</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn-search-hero w-100">
+            <i class="fa-solid fa-magnifying-glass me-2"></i>Find Stays
+          </button>
+        </div>
+      </form>
+    </div>
+    
+    <div class="hero-cta-buttons mt-4 animate-fade-in-delayed-2">
+      <a href="/listings" class="btn btn-hero-primary me-3">
+        <i class="fa-solid fa-earth-americas me-2"></i>Explore All Stays
+      </a>
+      <% if (typeof currUser === 'undefined' || !currUser) { %>
+        <a href="/signup" class="btn btn-hero-outline">
+          <i class="fa-solid fa-house-laptop me-2"></i>Become a Host
+        </a>
+      <% } else if (currUser.role === 'admin') { %>
+        <a href="/listings/new" class="btn btn-hero-outline">
+          <i class="fa-solid fa-house-laptop me-2"></i>Add Stay
+        </a>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Category Carousel / Grid Section -->
+<section class="landing-categories py-5">
+  <div class="container">
+    <div class="text-center mb-5">
+      <span class="section-label">Browse by Vibe</span>
+      <h2 class="section-heading mt-2">What kind of trip are you planning?</h2>
+      <p class="section-subheading text-muted">Filter our handpicked collection by your favorite categories</p>
+    </div>
+
+    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-4 justify-content-center">
+      
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Trending" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-solid fa-fire text-danger"></i></div>
+            <h5>Trending</h5>
+          </div>
+        </a>
+      </div>
+
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Rooms" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-solid fa-bed text-primary"></i></div>
+            <h5>Rooms</h5>
+          </div>
+        </a>
+      </div>
+
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Iconic Cities" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-solid fa-mountain-city text-success"></i></div>
+            <h5>Iconic Cities</h5>
+          </div>
+        </a>
+      </div>
+
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Mountains" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-solid fa-mountain text-info"></i></div>
+            <h5>Mountains</h5>
+          </div>
+        </a>
+      </div>
+
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Castles" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-brands fa-fort-awesome text-warning"></i></div>
+            <h5>Castles</h5>
+          </div>
+        </a>
+      </div>
+
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Amazing Pools" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-solid fa-person-swimming text-accent"></i></div>
+            <h5>Pools</h5>
+          </div>
+        </a>
+      </div>
+
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Camping" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-solid fa-campground text-success"></i></div>
+            <h5>Camping</h5>
+          </div>
+        </a>
+      </div>
+
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Farms" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-solid fa-cow text-dark"></i></div>
+            <h5>Farms</h5>
+          </div>
+        </a>
+      </div>
+
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Arctic" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-solid fa-snowflake text-info"></i></div>
+            <h5>Arctic</h5>
+          </div>
+        </a>
+      </div>
+
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Domes" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-solid fa-igloo text-secondary"></i></div>
+            <h5>Domes</h5>
+          </div>
+        </a>
+      </div>
+
+      <!-- Category Item -->
+      <div class="col">
+        <a href="/listings?category=Boats" class="category-card-link">
+          <div class="category-grid-card">
+            <div class="category-card-icon"><i class="fa-solid fa-ship text-primary"></i></div>
+            <h5>Boats</h5>
+          </div>
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Dynamic Featured Properties -->
+<% if (typeof featuredListings !== 'undefined' && featuredListings && featuredListings.length > 0) { %>
+<section class="featured-stays py-5 bg-light-section">
+  <div class="container">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5">
+      <div class="text-center text-md-start">
+        <span class="section-label">Top Rated</span>
+        <h2 class="section-heading mt-2">Featured Destinations</h2>
+        <p class="section-subheading text-muted">Highly recommended properties that travelers fall in love with</p>
+      </div>
+      <div>
+        <a href="/listings" class="btn btn-outline-dark-custom">
+          Explore All Stays <i class="fa-solid fa-arrow-right ms-2"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+      <% for(let listing of featuredListings) { %>
+        <div class="col">
+          <div class="card listing-card h-100 shadow-sm border-0 position-relative">
+            <!-- Category Badge -->
+            <span class="badge position-absolute top-0 start-0 m-3 z-3 bg-dark-glass text-white px-3 py-2 rounded-pill font-sm">
+              <i class="fa-solid fa-tag me-1"></i><%= listing.category %>
+            </span>
+            
+            <a href="/listings/<%= listing._id %>" class="listing-link text-decoration-none text-dark">
+              <div class="img-zoom-wrapper rounded-top">
+                <img src="<%= listing.image.url %>" class="card-img-top" alt="<%= listing.title %>">
+                <div class="img-overlay"></div>
+              </div>
+              <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h5 class="card-title text-truncate mb-0 font-md fw-bold"><%= listing.title %></h5>
+                  <span class="rating-badge fw-bold">
+                    <i class="fa-solid fa-star text-warning me-1"></i><%= listing.averageRating > 0 ? listing.averageRating : 'New' %>
+                  </span>
+                </div>
+                <p class="card-location text-muted font-sm mb-3">
+                  <i class="fa-solid fa-location-dot text-primary me-2"></i><%= listing.location %>, <%= listing.country %>
+                </p>
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                  <div class="price-block">
+                    <span class="price-val fw-extrabold text-primary">&#8377; <%= listing.price.toLocaleString("en-IN") %></span>
+                    <span class="price-unit text-muted">/ night</span>
+                  </div>
+                  <span class="btn-explore-sm">View Stay <i class="fa-solid fa-chevron-right ms-1"></i></span>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<!-- Why Choose Us / Value Proposition -->
+<section class="value-prop py-6">
+  <div class="container">
+    <div class="text-center mb-6">
+      <span class="section-label">TravelByChance Difference</span>
+      <h2 class="section-heading mt-2">Why Travelers Choose Us</h2>
+      <p class="section-subheading text-muted">We combine convenience, trust, and luxury to make every stay an adventure.</p>
+    </div>
+
+    <div class="row g-4 mt-2">
+      <!-- Item 1 -->
+      <div class="col-md-3">
+        <div class="value-card text-center p-5">
+          <div class="value-icon"><i class="fa-solid fa-house-circle-check"></i></div>
+          <h4 class="fw-bold mt-4">Verified Homes</h4>
+          <p class="text-muted mt-3 font-sm">Every property on our website undergoes rigorous review and identity verification processes.</p>
+        </div>
+      </div>
+      <!-- Item 2 -->
+      <div class="col-md-3">
+        <div class="value-card text-center p-5">
+          <div class="value-icon"><i class="fa-solid fa-shield-halved"></i></div>
+          <h4 class="fw-bold mt-4">Secure Bookings</h4>
+          <p class="text-muted mt-3 font-sm">Advanced encryption technology handles payments securely, giving hosts and travelers complete peace of mind.</p>
+        </div>
+      </div>
+      <!-- Item 3 -->
+      <div class="col-md-3">
+        <div class="value-card text-center p-5">
+          <div class="value-icon"><i class="fa-solid fa-sparkles"></i></div>
+          <h4 class="fw-bold mt-4">Unique Stays</h4>
+          <p class="text-muted mt-3 font-sm">From architectural marvels to forest domes, discover properties you won't find anywhere else.</p>
+        </div>
+      </div>
+      <!-- Item 4 -->
+      <div class="col-md-3">
+        <div class="value-card text-center p-5">
+          <div class="value-icon"><i class="fa-solid fa-hands-holding-child"></i></div>
+          <h4 class="fw-bold mt-4">Seamless Host Care</h4>
+          <p class="text-muted mt-3 font-sm">We assist our hosts with 24/7 client support, smart booking analytics, and comprehensive coverage details.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Hosting CTA Section -->
+<% if (typeof currUser === 'undefined' || !currUser || currUser.role === 'admin') { %>
+<section class="hosting-banner position-relative py-6 my-5 text-white">
+  <div class="hosting-banner-bg"></div>
+  <div class="container position-relative z-2">
+    <div class="row align-items-center">
+      <div class="col-lg-7 text-center text-lg-start mb-4 mb-lg-0">
+        <span class="badge bg-primary text-white rounded-pill px-3 py-2 mb-3">Host Your Property</span>
+        <h2 class="fw-extrabold display-5">Turn Your Home into an Extraordinary Stay</h2>
+        <p class="mt-3 lead text-white-50">Earn extra income and meet travelers from around the world. List your apartment, mountain cabin, or villa in minutes.</p>
+      </div>
+      <div class="col-lg-5 text-center text-lg-end">
+        <% if (typeof currUser === 'undefined' || !currUser) { %>
+          <a href="/signup" class="btn btn-light-large me-2">
+            Become a Host <i class="fa-solid fa-plus ms-2 text-primary"></i>
+          </a>
+          <a href="/login" class="btn btn-outline-light-large">
+            Login to Host
+          </a>
+        <% } else { %>
+          <a href="/listings/new" class="btn btn-light-large me-2">
+            List Your Property <i class="fa-solid fa-plus ms-2 text-primary"></i>
+          </a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</section>
+<% } %>

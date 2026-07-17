@@ -1,0 +1,241 @@
+<% layout('/layouts/boilerplate') %>
+
+<!-- Hero Section -->
+<div class="hero-section animate-fade-up">
+  <div class="container-fluid">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <div class="hero-label animate-fade-up stagger-1">
+          <i class="fa-solid fa-star"></i> Over <%= allListings.length %>+ curated stays
+        </div>
+        <h1 class="hero-title animate-fade-up stagger-2">
+          Find Your Perfect <span>Stay</span><br>Anywhere in the World
+        </h1>
+        <p class="hero-subtitle animate-fade-up stagger-3">
+          Discover unique hotels, homestays, and experiences across India and beyond — handpicked for unforgettable journeys.
+        </p>
+        <div class="hero-stats animate-fade-up stagger-3">
+          <div>
+            <div class="hero-stat-num">500+</div>
+            <div class="hero-stat-label">Properties</div>
+          </div>
+          <div>
+            <div class="hero-stat-num">50+</div>
+            <div class="hero-stat-label">Cities</div>
+          </div>
+          <div>
+            <div class="hero-stat-num">4.8★</div>
+            <div class="hero-stat-label">Avg Rating</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Category Filters -->
+<div id="filters">
+
+  <a href="/listings" class="filter-link">
+    <div class="filter <%= (!category && !searchQuery) ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-house"></i>
+      <p>All Stays</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Trending" class="filter-link">
+    <div class="filter <%= category === 'Trending' ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-fire"></i>
+      <p>Trending</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Rooms" class="filter-link">
+    <div class="filter <%= category === 'Rooms' ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-bed"></i>
+      <p>Rooms</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Iconic Cities" class="filter-link">
+    <div class="filter <%= category === 'Iconic Cities' ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-mountain-city"></i>
+      <p>Iconic Cities</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Mountains" class="filter-link">
+    <div class="filter <%= category === 'Mountains' ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-mountain"></i>
+      <p>Mountains</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Castles" class="filter-link">
+    <div class="filter <%= category === 'Castles' ? 'active-filter' : '' %>">
+      <i class="fa-brands fa-fort-awesome"></i>
+      <p>Castles</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Amazing Pools" class="filter-link">
+    <div class="filter <%= category === 'Amazing Pools' ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-person-swimming"></i>
+      <p>Pools</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Camping" class="filter-link">
+    <div class="filter <%= category === 'Camping' ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-campground"></i>
+      <p>Camping</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Farms" class="filter-link">
+    <div class="filter <%= category === 'Farms' ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-cow"></i>
+      <p>Farms</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Arctic" class="filter-link">
+    <div class="filter <%= category === 'Arctic' ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-snowflake"></i>
+      <p>Arctic</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Domes" class="filter-link">
+    <div class="filter <%= category === 'Domes' ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-igloo"></i>
+      <p>Domes</p>
+    </div>
+  </a>
+
+  <a href="/listings?category=Boats" class="filter-link">
+    <div class="filter <%= category === 'Boats' ? 'active-filter' : '' %>">
+      <i class="fa-solid fa-ship"></i>
+      <p>Boats</p>
+    </div>
+  </a>
+
+  <div class="tax-toggle ms-auto">
+    <div class="form-check-reverse form-switch d-flex align-items-center gap-2 mb-0">
+      <label class="form-check-label" for="flexSwitchCheckDefault" style="cursor:pointer; white-space:nowrap;">Show taxes</label>
+      <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" style="cursor:pointer;">
+    </div>
+  </div>
+</div>
+
+<!-- Results bar -->
+<div class="results-bar">
+  <div class="results-count">
+    Showing <span><%= allListings.length %></span> stays
+    <% if(searchQuery) { %> for "<%= searchQuery %>"<% } %>
+    <% if(category) { %> in <span><%= category %></span><% } %>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <% if(searchQuery) { %>
+      <a href="/listings<%= category ? '?category=' + encodeURIComponent(category) : '' %>" class="active-filter-badge">
+        <i class="fa-solid fa-xmark"></i> Clear search
+      </a>
+    <% } %>
+    <% if(category) { %>
+      <a href="/listings<%= searchQuery ? '?q=' + encodeURIComponent(searchQuery) : '' %>" class="active-filter-badge">
+        <i class="fa-solid fa-xmark"></i> Clear filter
+      </a>
+    <% } %>
+  </div>
+</div>
+
+<!-- Listings Grid -->
+<% if(allListings.length === 0) { %>
+  <div class="no-results animate-fade-up">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <h4>No stays found</h4>
+    <p>Try a different search term or browse all stays.</p>
+    <a href="/listings" class="btn-nav-action btn-nav-primary d-inline-flex mt-3" style="border-radius:50px;">Browse all stays</a>
+  </div>
+<% } else { %>
+<div class="listings-grid">
+  <% for(let listing of allListings) { %>
+    <div class="animate-fade-up">
+      <a href="/listings/<%= listing._id %>" class="listing-link">
+        <div class="listing-card">
+          <div class="card-img-wrapper">
+            <img src="<%= listing.image?.url || listing.image %>" class="card-img-top" alt="<%= listing.title %>" loading="lazy">
+            <button class="wishlist-btn" onclick="event.preventDefault(); toggleWishlist(this);" aria-label="Save to wishlist">
+              <i class="fa-regular fa-heart"></i>
+            </button>
+            <span class="card-category-tag"><i class="fa-solid fa-tag me-1"></i><%= listing.category || 'Stay' %></span>
+            <div class="card-book-overlay">
+              <span class="book-now-btn">View Details →</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-location">
+              <i class="fa-solid fa-location-dot"></i>
+              <%= listing.location %>, <%= listing.country %>
+            </div>
+            <div class="card-title-text"><%= listing.title %></div>
+            <div class="card-rating">
+              <% if(listing.averageRating && listing.averageRating > 0) { %>
+                <% let stars = parseFloat(listing.averageRating); %>
+                <% for(let i=1; i<=5; i++) { %>
+                  <% if(i <= stars) { %>
+                    <i class="fa-solid fa-star star-filled"></i>
+                  <% } else if(i - 0.5 <= stars) { %>
+                    <i class="fa-solid fa-star-half-stroke star-filled"></i>
+                  <% } else { %>
+                    <i class="fa-regular fa-star star-empty" style="color:#d1d5db;"></i>
+                  <% } %>
+                <% } %>
+                <span class="rating-val" style="font-weight:700; color:#1a1a2e; margin-left: 4px;"><%= listing.averageRating %></span>
+              <% } else { %>
+                <span style="color:#9ca3af; font-size:0.8rem;">No reviews yet</span>
+              <% } %>
+              <span class="rating-count" style="margin-left: 4px;">
+                (<%= listing.reviews ? listing.reviews.length : 0 %>)
+              </span>
+            </div>
+            <div class="card-price-row">
+              <div class="card-price">
+                <span class="price-rupee">₹</span><%= listing.price.toLocaleString("en-IN") %><span class="price-per">/night</span>
+                <i class="tax-info">&nbsp;+18% GST</i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  <% } %>
+</div>
+<% } %>
+
+<script>
+  // Tax toggle
+  const taxSwitch = document.getElementById("flexSwitchCheckDefault");
+  if (taxSwitch) {
+    taxSwitch.addEventListener("change", () => {
+      document.querySelectorAll(".tax-info").forEach(el => {
+        el.style.display = taxSwitch.checked ? "inline" : "none";
+      });
+    });
+  }
+
+  // Wishlist toggle
+  function toggleWishlist(btn) {
+    const icon = btn.querySelector('i');
+    const isActive = btn.classList.toggle('active');
+    icon.className = isActive ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
+    icon.style.color = isActive ? '#FF5A5F' : '';
+  }
+
+  // Stagger animations
+  document.querySelectorAll('.listings-grid .animate-fade-up').forEach((el, i) => {
+    el.style.animationDelay = `${i * 0.06}s`;
+    el.style.opacity = '0';
+    el.style.animation = `fadeInUp 0.5s ease ${i * 0.06}s forwards`;
+  });
+</script>
