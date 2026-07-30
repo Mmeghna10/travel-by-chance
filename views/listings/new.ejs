@@ -1,75 +1,105 @@
 <% layout('/layouts/boilerplate') %>
 
-<div class="container">
-  <div class="form-page-wrapper animate-fade-up">
-    <div class="text-center mb-4">
-      <div style="width:56px; height:56px; background:linear-gradient(135deg,#FF5A5F,#ff8f92); border-radius:16px; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem; color:white; font-size:1.4rem;">
-        <i class="fa-solid fa-house-circle-plus"></i>
-      </div>
-      <h1 class="form-page-title">List Your Property</h1>
-      <p class="form-page-subtitle">Share your space with travellers from across India and the world</p>
-    </div>
+<div style="max-width: 680px; margin: 2.5rem auto; padding: 0 1rem;">
 
+  <!-- Header -->
+  <div style="text-align: center; margin-bottom: 2.5rem;">
+    <div style="width: 56px; height: 56px; background: linear-gradient(135deg, var(--primary), #FF7A8A); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.4rem; box-shadow: 0 4px 14px rgba(255,56,92,0.3);">
+      <i class="fa-solid fa-house-circle-plus"></i>
+    </div>
+    <h1 style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.35rem;">List Your Property</h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Share your space with travellers across India and the world</p>
+  </div>
+
+  <div style="background: white; border: 1px solid var(--border-main); border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-md);">
     <form method="POST" action="/listings" novalidate class="needs-validation" enctype="multipart/form-data">
 
-      <div class="mb-3">
-        <label for="title" class="form-label">Property Title *</label>
-        <input name="listing[title]" id="title" placeholder="e.g. Cozy Sea-View Studio in Bandra" type="text" class="form-control" required />
+      <!-- Title -->
+      <div class="mb-4">
+        <label for="title" class="form-label-pro">Property Title <span style="color: var(--primary);">*</span></label>
+        <input name="listing[title]" id="title" placeholder="e.g. Cozy Sea-View Studio in Bandra" type="text" class="form-control form-control-pro" required />
         <div class="valid-feedback">Looks great!</div>
         <div class="invalid-feedback">Please enter a title.</div>
       </div>
 
-      <div class="mb-3">
-        <label for="description" class="form-label">Description *</label>
-        <textarea name="listing[description]" id="description" placeholder="Describe your property — what makes it special, nearby attractions, house rules..." class="form-control" rows="4" required></textarea>
+      <!-- Description -->
+      <div class="mb-4">
+        <label for="description" class="form-label-pro">Description <span style="color: var(--primary);">*</span></label>
+        <textarea name="listing[description]" id="description" placeholder="Describe your property — what makes it special, nearby attractions, house rules..." class="form-control form-control-pro" rows="4" required></textarea>
         <div class="invalid-feedback">Please add a description.</div>
       </div>
 
-      <div class="mb-3">
-        <label for="image" class="form-label">Property Image *</label>
-        <input name="listing[image]" id="image" type="file" class="form-control" accept="image/*" required />
-        <div class="form-text" style="font-size:0.78rem; color:#9ca3af;">Recommended: 1200×800px, max 5MB</div>
+      <!-- Image Upload -->
+      <div class="mb-4">
+        <label for="image" class="form-label-pro">Property Image <span style="color: var(--primary);">*</span></label>
+        <input name="listing[image]" id="image" type="file" class="form-control form-control-pro" accept="image/*" required />
+        <div style="font-size: 0.78rem; color: var(--text-subtle); margin-top: 0.4rem;">Recommended: 1200×800px, max 5MB</div>
       </div>
 
-      <div class="row g-3 mb-3">
+      <!-- Price + Country Row -->
+      <div class="row g-3 mb-4">
         <div class="col-md-5">
-          <label for="price" class="form-label">Price per Night (₹) *</label>
-          <input name="listing[price]" id="price" type="number" placeholder="e.g. 3500" class="form-control" required min="1" />
+          <label for="price" class="form-label-pro">Price per Night (₹) <span style="color: var(--primary);">*</span></label>
+          <input name="listing[price]" id="price" type="number" placeholder="e.g. 3500" class="form-control form-control-pro" required min="1" />
           <div class="invalid-feedback">Please enter a valid price.</div>
         </div>
         <div class="col-md-7">
-          <label for="country" class="form-label">Country *</label>
-          <input name="listing[country]" id="country" placeholder="India" type="text" class="form-control" required />
+          <label for="country" class="form-label-pro">Country <span style="color: var(--primary);">*</span></label>
+          <input name="listing[country]" id="country" placeholder="India" type="text" class="form-control form-control-pro" required />
           <div class="invalid-feedback">Please enter the country.</div>
         </div>
       </div>
 
-      <div class="mb-3">
-        <label for="location" class="form-label">City / Location *</label>
-        <input name="listing[location]" id="location" placeholder="e.g. Mumbai, Goa, Manali, Jaipur..." type="text" class="form-control" required />
+      <!-- Location -->
+      <div class="mb-4">
+        <label for="location" class="form-label-pro">City / Location <span style="color: var(--primary);">*</span></label>
+        <input name="listing[location]" id="location" placeholder="e.g. Mumbai, Goa, Manali, Jaipur..." type="text" class="form-control form-control-pro" required />
         <div class="invalid-feedback">Please enter a location.</div>
       </div>
 
+      <!-- Category -->
       <div class="mb-4">
-        <label for="category" class="form-label">Category *</label>
-        <select name="listing[category]" id="category" class="form-select" required>
-          <option value="" disabled selected>Select a category</option>
-          <option value="Trending">🔥 Trending</option>
-          <option value="Rooms">🛏️ Rooms</option>
-          <option value="Iconic Cities">🏙️ Iconic Cities</option>
-          <option value="Mountains">⛰️ Mountains</option>
-          <option value="Castles">🏰 Castles</option>
-          <option value="Amazing Pools">🏊 Amazing Pools</option>
-          <option value="Camping">⛺ Camping</option>
-          <option value="Farms">🐄 Farms</option>
-          <option value="Arctic">❄️ Arctic</option>
-          <option value="Domes">🏠 Domes</option>
-          <option value="Boats">⛵ Boats</option>
-        </select>
-        <div class="invalid-feedback">Please select a category.</div>
+        <label for="category" class="form-label-pro">Category <span style="color: var(--primary);">*</span></label>
+        <div class="dropdown">
+          <input type="hidden" name="listing[category]" id="form-category-input" value="" required>
+          <button class="form-control-pro-select-btn dropdown-toggle" type="button" id="formCategoryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <span id="form-category-label" style="color: var(--text-subtle);">Select a category</span>
+            <i class="fa-solid fa-chevron-down" style="font-size: 0.8rem; color: var(--primary);"></i>
+          </button>
+          <ul class="dropdown-menu custom-select-dropdown w-100 mt-1" aria-labelledby="formCategoryDropdown">
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Trending', '🔥 Trending', this, event)"><i class="fa-solid fa-fire me-2" style="color:#B26335;"></i>Trending</a></li>
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Rooms', '🛏️ Rooms', this, event)"><i class="fa-solid fa-bed me-2" style="color:#7A3A14;"></i>Rooms</a></li>
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Iconic Cities', '🏙️ Iconic Cities', this, event)"><i class="fa-solid fa-mountain-city me-2" style="color:#3B3A1E;"></i>Iconic Cities</a></li>
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Mountains', '⛰️ Mountains', this, event)"><i class="fa-solid fa-mountain me-2" style="color:#4F4E28;"></i>Mountains</a></li>
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Castles', '🏰 Castles', this, event)"><i class="fa-solid fa-chess-rook me-2" style="color:#5D2C0C;"></i>Castles</a></li>
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Amazing Pools', '🏊 Amazing Pools', this, event)"><i class="fa-solid fa-person-swimming me-2" style="color:#2E6E65;"></i>Amazing Pools</a></li>
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Camping', '⛺ Camping', this, event)"><i class="fa-solid fa-campground me-2" style="color:#3B5C2A;"></i>Camping</a></li>
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Farms', '🌱 Farms', this, event)"><i class="fa-solid fa-seedling me-2" style="color:#6B5220;"></i>Farms</a></li>
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Arctic', '❄️ Arctic', this, event)"><i class="fa-solid fa-snowflake me-2" style="color:#3A5E7A;"></i>Arctic</a></li>
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Domes', '🏠 Domes', this, event)"><i class="fa-solid fa-igloo me-2" style="color:#5E3E2C;"></i>Domes</a></li>
+            <li><a class="dropdown-item" href="#" onclick="selectFormCategory('Boats', '⛵ Boats', this, event)"><i class="fa-solid fa-sailboat me-2" style="color:#2A4E78;"></i>Boats</a></li>
+          </ul>
+        </div>
       </div>
 
-      <button class="btn add-btn" type="submit">
+<script>
+function selectFormCategory(val, label, el, e) {
+  e.preventDefault();
+  document.getElementById('form-category-input').value = val;
+  const labelEl = document.getElementById('form-category-label');
+  labelEl.textContent = label;
+  labelEl.style.color = 'var(--text-main)';
+  document.querySelectorAll('#formCategoryDropdown + .dropdown-menu .dropdown-item').forEach(item => item.classList.remove('active'));
+  el.classList.add('active');
+  const dropdownBtn = document.getElementById('formCategoryDropdown');
+  if (window.bootstrap && bootstrap.Dropdown) {
+    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownBtn) || new bootstrap.Dropdown(dropdownBtn);
+    if (bsDropdown) bsDropdown.hide();
+  }
+}
+</script>
+
+      <button class="btn-form-primary" type="submit">
         <i class="fa-solid fa-plus me-2"></i>List My Property
       </button>
     </form>

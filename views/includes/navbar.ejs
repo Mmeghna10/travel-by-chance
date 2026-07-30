@@ -1,79 +1,90 @@
-<nav class="navbar navbar-expand-lg sticky-top" id="mainNavbar">
-  <div class="container-fluid px-3">
+<nav class="navbar navbar-expand-lg navbar-main" id="mainNavbar">
+  <div class="container-fluid px-4">
 
     <!-- Brand -->
-    <a class="navbar-brand" href="/">
-      <div class="brand-icon"><i class="fa-solid fa-mountain-sun"></i></div>
-      <span class="brand-text">TravelByChance</span>
+    <a class="navbar-brand-custom" href="/">
+      <div class="brand-icon-box">
+        <i class="fa-solid fa-mountain-sun"></i>
+      </div>
+      <span class="brand-logo-text">Travel<span>By</span>Chance</span>
     </a>
 
     <!-- Mobile toggle -->
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+    <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="navbarContent">
 
-      <!-- Search Bar with Autocomplete -->
+      <!-- Search Bar -->
       <form class="d-flex mx-auto my-2 my-lg-0" role="search" action="/listings" method="GET" id="search-form" autocomplete="off">
-        <div class="search-wrapper">
-          <input
-            name="q"
-            id="search-input"
-            class="form-control search-inp"
-            type="search"
-            placeholder="Search cities, hotels..."
-            aria-label="Search"
-            value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>"
-          />
-          <div id="suggestions-list"></div>
+        <div class="nav-search-container">
+          <div class="nav-search-bar">
+            <i class="fa-solid fa-magnifying-glass" style="color:var(--text-subtle);font-size:0.88rem;margin-right:0.5rem;flex-shrink:0;"></i>
+            <input
+              name="q" id="search-input"
+              class="form-control nav-search-input"
+              type="search"
+              placeholder="Search destinations..."
+              aria-label="Search"
+              value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>"
+            />
+            <button class="nav-search-btn" type="submit" id="search-submit-btn" aria-label="Search">
+              <i class="fa-solid fa-arrow-right" style="font-size:0.82rem;"></i>
+            </button>
+          </div>
+          <div id="suggestions-list" class="suggestions-box"></div>
         </div>
-        <button class="btn search-btn" type="submit" id="search-submit-btn">
-          <i class="fa-solid fa-magnifying-glass me-1"></i>Search
-        </button>
       </form>
 
-      <!-- Right Nav -->
-      <div class="navbar-nav d-flex flex-row align-items-center gap-2 ms-lg-2">
-        <a class="btn-nav-action btn-nav-ghost" href="/listings">
-          <i class="fa-solid fa-compass me-1"></i>Explore
+      <!-- Right Nav Actions -->
+      <div class="navbar-nav d-flex flex-row align-items-center gap-2 ms-lg-3">
+
+        <a class="nav-btn nav-btn-ghost" href="/listings">
+          <i class="fa-solid fa-compass"></i>
+          <span class="d-none d-md-inline">Explore</span>
         </a>
+
         <% if(typeof currUser !== 'undefined' && currUser) { %>
           <% if(currUser.role === 'admin') { %>
-            <a class="btn-nav-action btn-nav-outline" href="/listings/new">
-              <i class="fa-solid fa-plus me-1"></i>List Property
+            <a class="nav-btn nav-btn-outline" href="/listings/new">
+              <i class="fa-solid fa-plus"></i>
+              <span>List Property</span>
             </a>
           <% } %>
+
+          <!-- User Dropdown -->
           <div class="dropdown">
-            <button class="btn-nav-action btn-nav-ghost dropdown-toggle" type="button" data-bs-toggle="dropdown">
-              <div class="user-avatar"><%= currUser.username.charAt(0).toUpperCase() %></div>
+            <button class="user-avatar-btn dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border:none;outline:none;">
+              <i class="fa-solid fa-bars" style="color:var(--text-muted);font-size:0.88rem;"></i>
+              <div class="user-avatar-circle"><%= currUser.username.charAt(0).toUpperCase() %></div>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:12px; min-width:180px;">
-              <li><span class="dropdown-item-text text-muted" style="font-size:0.8rem; padding: 0.5rem 1rem;">Signed in as</span></li>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom" aria-labelledby="userDropdown">
               <li>
-                <span class="dropdown-item-text fw-bold" style="padding: 0 1rem 0.5rem;">
-                  <%= currUser.username %> 
-                  <span class="badge rounded-pill <%= currUser.role === 'admin' ? 'bg-danger' : 'bg-primary' %>" style="font-size:0.65rem; text-transform:uppercase; margin-left:4px; font-weight:700;">
-                    <%= currUser.role %>
-                  </span>
+                <span style="display:block;font-size:0.75rem;color:var(--text-subtle);padding:0.4rem 0.9rem;">Signed in as</span>
+              </li>
+              <li>
+                <span style="display:flex;align-items:center;gap:0.5rem;padding:0 0.9rem 0.5rem;font-weight:700;font-size:0.9rem;color:var(--text-main);">
+                  <%= currUser.username %>
+                  <span class="badge rounded-pill" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.05em;background:<%= currUser.role === 'admin' ? 'var(--espresso)' : 'var(--olive)' %>;color:var(--cream);padding:0.25em 0.6em;"><%= currUser.role %></span>
                 </span>
               </li>
-              <li><hr class="dropdown-divider my-1"></li>
+              <li><hr class="dropdown-divider my-1" style="border-color:var(--border-light);"></li>
               <% if (currUser.role === 'admin') { %>
-                <li><a class="dropdown-item fw-bold text-danger" href="/admin"><i class="fa-solid fa-gauge-high me-2 text-danger"></i>Admin Panel</a></li>
-                <li><a class="dropdown-item" href="/listings/new"><i class="fa-solid fa-plus me-2 text-muted"></i>Add listing</a></li>
+                <li><a class="dropdown-item" href="/admin"><i class="fa-solid fa-gauge-high me-2" style="color:var(--primary);"></i>Admin Panel</a></li>
+                <li><a class="dropdown-item" href="/listings/new"><i class="fa-solid fa-plus me-2" style="color:var(--text-subtle);"></i>Add Listing</a></li>
               <% } %>
-              <li><a class="dropdown-item" href="/bookings"><i class="fa-solid fa-calendar-check me-2 text-muted"></i>My Bookings</a></li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li><a class="dropdown-item text-danger" href="/logout"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
+              <li><a class="dropdown-item" href="/bookings"><i class="fa-solid fa-calendar-check me-2" style="color:var(--text-subtle);"></i>My Bookings</a></li>
+              <li><hr class="dropdown-divider my-1" style="border-color:var(--border-light);"></li>
+              <li><a class="dropdown-item" href="/logout" style="color:var(--danger);"><i class="fa-solid fa-right-from-bracket me-2"></i>Log out</a></li>
             </ul>
           </div>
+
         <% } else { %>
-          <a class="btn-nav-action btn-nav-outline" href="/login">Login</a>
-          <a class="btn-nav-action btn-nav-primary" href="/signup">Sign up</a>
+          <a class="nav-btn nav-btn-outline" href="/login">Log in</a>
+          <a class="nav-btn nav-btn-primary" href="/signup">Sign up</a>
         <% } %>
       </div>
-
     </div>
   </div>
 </nav>
@@ -83,41 +94,32 @@
   const input = document.getElementById('search-input');
   const list = document.getElementById('suggestions-list');
   let debounceTimer;
-
   if (!input || !list) return;
 
   input.addEventListener('input', function() {
     clearTimeout(debounceTimer);
     const q = this.value.trim();
     if (q.length < 2) { list.classList.remove('show'); list.innerHTML = ''; return; }
-
     debounceTimer = setTimeout(() => {
       fetch(`/api/search-suggestions?q=${encodeURIComponent(q)}`)
         .then(r => r.json())
         .then(data => {
           if (!data.length) { list.classList.remove('show'); list.innerHTML = ''; return; }
           list.innerHTML = data.map(item => `
-            <a href="/listings/${item._id}" class="suggestion-item">
-              <div class="suggestion-icon"><i class="fa-solid fa-location-dot"></i></div>
+            <a href="/listings/${item._id}" class="suggestion-item-custom">
+              <div class="suggestion-icon-badge"><i class="fa-solid fa-location-dot"></i></div>
               <div>
-                <div class="suggestion-text">${item.title}</div>
-                <div class="suggestion-sub"><i class="fa-solid fa-map-pin" style="font-size:0.7rem;color:#FF5A5F;margin-right:3px;"></i>${item.location}, ${item.country}</div>
+                <div style="font-size:0.88rem;font-weight:600;">${item.title}</div>
+                <div style="font-size:0.78rem;color:var(--text-subtle);">${item.location}, ${item.country}</div>
               </div>
             </a>
           `).join('');
           list.classList.add('show');
-        }).catch(() => { list.classList.remove('show'); });
+        }).catch(() => list.classList.remove('show'));
     }, 220);
   });
 
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('#search-form')) {
-      list.classList.remove('show');
-    }
-  });
-
-  input.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { list.classList.remove('show'); }
-  });
+  document.addEventListener('click', e => { if (!e.target.closest('#search-form')) list.classList.remove('show'); });
+  input.addEventListener('keydown', e => { if (e.key === 'Escape') list.classList.remove('show'); });
 })();
 </script>

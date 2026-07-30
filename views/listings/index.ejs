@@ -1,241 +1,174 @@
 <% layout('/layouts/boilerplate') %>
 
-<!-- Hero Section -->
-<div class="hero-section animate-fade-up">
-  <div class="container-fluid">
+<!-- Hero Bar -->
+<div style="background:linear-gradient(160deg,var(--espresso) 0%,var(--dark) 100%);padding:3rem 0;margin:0 -12px;border-bottom:1px solid var(--border-main);">
+  <div class="container-fluid px-4">
     <div class="row align-items-center">
       <div class="col-lg-7">
-        <div class="hero-label animate-fade-up stagger-1">
-          <i class="fa-solid fa-star"></i> Over <%= allListings.length %>+ curated stays
+        <div style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(221,163,92,0.18);color:var(--amber);border:1px solid rgba(221,163,92,0.35);padding:0.3rem 0.85rem;border-radius:var(--radius-pill);font-size:0.75rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:1rem;">
+          <i class="fa-solid fa-star"></i> <%= allListings.length %>+ curated stays
         </div>
-        <h1 class="hero-title animate-fade-up stagger-2">
-          Find Your Perfect <span>Stay</span><br>Anywhere in the World
+        <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3.2rem);font-weight:600;color:var(--cream);line-height:1.1;letter-spacing:-0.01em;margin-bottom:0.75rem;">
+          Find Your Perfect Stay<br>
+          <span style="color:var(--amber);">Anywhere in the World</span>
         </h1>
-        <p class="hero-subtitle animate-fade-up stagger-3">
-          Discover unique hotels, homestays, and experiences across India and beyond — handpicked for unforgettable journeys.
+        <p style="font-size:0.97rem;color:rgba(227,222,202,0.6);max-width:500px;margin-bottom:0;line-height:1.7;">
+          Discover hotels, homestays, and unique experiences across India and beyond — handpicked for unforgettable journeys.
         </p>
-        <div class="hero-stats animate-fade-up stagger-3">
-          <div>
-            <div class="hero-stat-num">500+</div>
-            <div class="hero-stat-label">Properties</div>
-          </div>
-          <div>
-            <div class="hero-stat-num">50+</div>
-            <div class="hero-stat-label">Cities</div>
-          </div>
-          <div>
-            <div class="hero-stat-num">4.8★</div>
-            <div class="hero-stat-label">Avg Rating</div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Category Filters -->
-<div id="filters">
-
-  <a href="/listings" class="filter-link">
-    <div class="filter <%= (!category && !searchQuery) ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-house"></i>
-      <p>All Stays</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Trending" class="filter-link">
-    <div class="filter <%= category === 'Trending' ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-fire"></i>
-      <p>Trending</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Rooms" class="filter-link">
-    <div class="filter <%= category === 'Rooms' ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-bed"></i>
-      <p>Rooms</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Iconic Cities" class="filter-link">
-    <div class="filter <%= category === 'Iconic Cities' ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-mountain-city"></i>
-      <p>Iconic Cities</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Mountains" class="filter-link">
-    <div class="filter <%= category === 'Mountains' ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-mountain"></i>
-      <p>Mountains</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Castles" class="filter-link">
-    <div class="filter <%= category === 'Castles' ? 'active-filter' : '' %>">
-      <i class="fa-brands fa-fort-awesome"></i>
-      <p>Castles</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Amazing Pools" class="filter-link">
-    <div class="filter <%= category === 'Amazing Pools' ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-person-swimming"></i>
-      <p>Pools</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Camping" class="filter-link">
-    <div class="filter <%= category === 'Camping' ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-campground"></i>
-      <p>Camping</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Farms" class="filter-link">
-    <div class="filter <%= category === 'Farms' ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-cow"></i>
-      <p>Farms</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Arctic" class="filter-link">
-    <div class="filter <%= category === 'Arctic' ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-snowflake"></i>
-      <p>Arctic</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Domes" class="filter-link">
-    <div class="filter <%= category === 'Domes' ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-igloo"></i>
-      <p>Domes</p>
-    </div>
-  </a>
-
-  <a href="/listings?category=Boats" class="filter-link">
-    <div class="filter <%= category === 'Boats' ? 'active-filter' : '' %>">
-      <i class="fa-solid fa-ship"></i>
-      <p>Boats</p>
-    </div>
-  </a>
-
-  <div class="tax-toggle ms-auto">
-    <div class="form-check-reverse form-switch d-flex align-items-center gap-2 mb-0">
-      <label class="form-check-label" for="flexSwitchCheckDefault" style="cursor:pointer; white-space:nowrap;">Show taxes</label>
-      <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" style="cursor:pointer;">
+<!-- Category Filter Bar -->
+<div class="categories-wrapper" style="margin:0 -12px;padding:0.85rem 1.5rem;">
+  <div class="categories-flex">
+    <a href="/listings" class="category-pill <%= (!category && !searchQuery) ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-house" style="font-size:0.85rem;"></i> All Stays
+    </a>
+    <a href="/listings?category=Trending" class="category-pill <%= category === 'Trending' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-fire" style="font-size:0.85rem;color:<%= category === 'Trending' ? 'rgba(255,255,255,0.75)' : '#B26335' %>;"></i> Trending
+    </a>
+    <a href="/listings?category=Rooms" class="category-pill <%= category === 'Rooms' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-bed" style="font-size:0.85rem;color:<%= category === 'Rooms' ? 'rgba(255,255,255,0.75)' : '#7A3A14' %>;"></i> Rooms
+    </a>
+    <a href="/listings?category=Iconic Cities" class="category-pill <%= category === 'Iconic Cities' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-mountain-city" style="font-size:0.85rem;color:<%= category === 'Iconic Cities' ? 'rgba(255,255,255,0.75)' : '#3B3A1E' %>;"></i> Iconic Cities
+    </a>
+    <a href="/listings?category=Mountains" class="category-pill <%= category === 'Mountains' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-mountain" style="font-size:0.85rem;color:<%= category === 'Mountains' ? 'rgba(255,255,255,0.75)' : '#4F4E28' %>;"></i> Mountains
+    </a>
+    <a href="/listings?category=Castles" class="category-pill <%= category === 'Castles' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-chess-rook" style="font-size:0.85rem;color:<%= category === 'Castles' ? 'rgba(255,255,255,0.75)' : '#5D2C0C' %>;"></i> Castles
+    </a>
+    <a href="/listings?category=Amazing Pools" class="category-pill <%= category === 'Amazing Pools' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-person-swimming" style="font-size:0.85rem;color:<%= category === 'Amazing Pools' ? 'rgba(255,255,255,0.75)' : '#2E6E65' %>;"></i> Pools
+    </a>
+    <a href="/listings?category=Camping" class="category-pill <%= category === 'Camping' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-campground" style="font-size:0.85rem;color:<%= category === 'Camping' ? 'rgba(255,255,255,0.75)' : '#3B5C2A' %>;"></i> Camping
+    </a>
+    <a href="/listings?category=Farms" class="category-pill <%= category === 'Farms' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-seedling" style="font-size:0.85rem;color:<%= category === 'Farms' ? 'rgba(255,255,255,0.75)' : '#6B5220' %>;"></i> Farms
+    </a>
+    <a href="/listings?category=Arctic" class="category-pill <%= category === 'Arctic' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-snowflake" style="font-size:0.85rem;color:<%= category === 'Arctic' ? 'rgba(255,255,255,0.75)' : '#3A5E7A' %>;"></i> Arctic
+    </a>
+    <a href="/listings?category=Domes" class="category-pill <%= category === 'Domes' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-igloo" style="font-size:0.85rem;color:<%= category === 'Domes' ? 'rgba(255,255,255,0.75)' : '#5E3E2C' %>;"></i> Domes
+    </a>
+    <a href="/listings?category=Boats" class="category-pill <%= category === 'Boats' ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid fa-sailboat" style="font-size:0.85rem;color:<%= category === 'Boats' ? 'rgba(255,255,255,0.75)' : '#2A4E78' %>;"></i> Boats
+    </a>
+    <div class="tax-switch-pill ms-auto">
+      <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
+        <input class="form-check-input" type="checkbox" role="switch" id="taxToggle" style="cursor:pointer;">
+        <label class="form-check-label" for="taxToggle" style="cursor:pointer;white-space:nowrap;">Show taxes</label>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Results bar -->
-<div class="results-bar">
-  <div class="results-count">
-    Showing <span><%= allListings.length %></span> stays
-    <% if(searchQuery) { %> for "<%= searchQuery %>"<% } %>
-    <% if(category) { %> in <span><%= category %></span><% } %>
+<!-- Results Bar -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 1.25rem;flex-wrap:wrap;gap:0.75rem;">
+  <div style="font-size:0.93rem;color:var(--text-main);font-weight:600;">
+    Showing <span style="color:var(--primary);font-weight:800;"><%= allListings.length %></span> stays
+    <% if(searchQuery) { %> for "<strong><%= searchQuery %></strong>"<% } %>
+    <% if(category) { %> in <strong><%= category %></strong><% } %>
   </div>
-  <div class="d-flex gap-2 flex-wrap">
+  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
     <% if(searchQuery) { %>
-      <a href="/listings<%= category ? '?category=' + encodeURIComponent(category) : '' %>" class="active-filter-badge">
+      <a href="/listings<%= category ? '?category=' + encodeURIComponent(category) : '' %>"
+        style="display:inline-flex;align-items:center;gap:0.4rem;background:var(--primary-light);color:var(--primary);border:1px solid var(--primary-border);padding:0.3rem 0.85rem;border-radius:var(--radius-pill);font-size:0.82rem;font-weight:700;text-decoration:none;">
         <i class="fa-solid fa-xmark"></i> Clear search
       </a>
     <% } %>
     <% if(category) { %>
-      <a href="/listings<%= searchQuery ? '?q=' + encodeURIComponent(searchQuery) : '' %>" class="active-filter-badge">
+      <a href="/listings<%= searchQuery ? '?q=' + encodeURIComponent(searchQuery) : '' %>"
+        style="display:inline-flex;align-items:center;gap:0.4rem;background:var(--primary-light);color:var(--primary);border:1px solid var(--primary-border);padding:0.3rem 0.85rem;border-radius:var(--radius-pill);font-size:0.82rem;font-weight:700;text-decoration:none;">
         <i class="fa-solid fa-xmark"></i> Clear filter
       </a>
     <% } %>
   </div>
 </div>
 
-<!-- Listings Grid -->
+<!-- Listings Grid or Empty State -->
 <% if(allListings.length === 0) { %>
-  <div class="no-results animate-fade-up">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <h4>No stays found</h4>
-    <p>Try a different search term or browse all stays.</p>
-    <a href="/listings" class="btn-nav-action btn-nav-primary d-inline-flex mt-3" style="border-radius:50px;">Browse all stays</a>
+  <div style="text-align:center;padding:6rem 2rem;background:white;border-radius:var(--radius-lg);border:1px dashed var(--border-main);">
+    <div style="width:72px;height:72px;background:var(--cream-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;border:1px solid var(--border-main);">
+      <i class="fa-solid fa-magnifying-glass" style="font-size:1.8rem;color:var(--border-dark);"></i>
+    </div>
+    <h4 style="font-family:var(--font-display);font-weight:600;font-size:1.5rem;margin-bottom:0.5rem;color:var(--dark);">No stays found</h4>
+    <p style="color:var(--text-muted);max-width:340px;margin:0 auto 1.5rem;">Try a different search term or browse all available stays.</p>
+    <a href="/listings" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.75rem 1.75rem;background:var(--primary);color:white;border-radius:var(--radius-pill);font-weight:700;font-size:0.95rem;text-decoration:none;box-shadow:var(--shadow-primary);">
+      Browse all stays
+    </a>
   </div>
 <% } else { %>
-<div class="listings-grid">
-  <% for(let listing of allListings) { %>
-    <div class="animate-fade-up">
-      <a href="/listings/<%= listing._id %>" class="listing-link">
-        <div class="listing-card">
-          <div class="card-img-wrapper">
-            <img src="<%= listing.image?.url || listing.image %>" class="card-img-top" alt="<%= listing.title %>" loading="lazy">
-            <button class="wishlist-btn" onclick="event.preventDefault(); toggleWishlist(this);" aria-label="Save to wishlist">
+  <div class="listings-grid-layout">
+    <% for(let listing of allListings) { %>
+      <a href="/listings/<%= listing._id %>" class="listing-link-wrap" style="text-decoration:none;display:block;">
+        <div class="listing-card-pro">
+          <div class="card-img-container">
+            <img src="<%= listing.image?.url || listing.image %>" class="card-img-src" alt="<%= listing.title %>" loading="lazy">
+            <button class="wishlist-heart-btn" id="wish-<%= listing._id %>" onclick="event.preventDefault();toggleWishlist(this);" aria-label="Save to wishlist">
               <i class="fa-regular fa-heart"></i>
             </button>
-            <span class="card-category-tag"><i class="fa-solid fa-tag me-1"></i><%= listing.category || 'Stay' %></span>
-            <div class="card-book-overlay">
-              <span class="book-now-btn">View Details →</span>
-            </div>
+            <span class="card-category-badge">
+              <i class="fa-solid fa-tag me-1" style="font-size:0.65rem;"></i><%= listing.category || 'Stay' %>
+            </span>
           </div>
-          <div class="card-body">
-            <div class="card-location">
+          <div class="card-body-content">
+            <div class="card-location-row">
               <i class="fa-solid fa-location-dot"></i>
               <%= listing.location %>, <%= listing.country %>
             </div>
-            <div class="card-title-text"><%= listing.title %></div>
-            <div class="card-rating">
+            <div class="card-title-heading"><%= listing.title %></div>
+            <div class="card-rating-bar">
               <% if(listing.averageRating && listing.averageRating > 0) { %>
                 <% let stars = parseFloat(listing.averageRating); %>
-                <% for(let i=1; i<=5; i++) { %>
+                <% for(let i = 1; i <= 5; i++) { %>
                   <% if(i <= stars) { %>
-                    <i class="fa-solid fa-star star-filled"></i>
+                    <i class="fa-solid fa-star star-icon-fill" style="font-size:0.78rem;"></i>
                   <% } else if(i - 0.5 <= stars) { %>
-                    <i class="fa-solid fa-star-half-stroke star-filled"></i>
+                    <i class="fa-solid fa-star-half-stroke star-icon-fill" style="font-size:0.78rem;"></i>
                   <% } else { %>
-                    <i class="fa-regular fa-star star-empty" style="color:#d1d5db;"></i>
+                    <i class="fa-regular fa-star star-icon-empty" style="font-size:0.78rem;"></i>
                   <% } %>
                 <% } %>
-                <span class="rating-val" style="font-weight:700; color:#1a1a2e; margin-left: 4px;"><%= listing.averageRating %></span>
+                <span class="rating-num-text"><%= listing.averageRating %></span>
+                <span class="review-count-text">(<%= listing.reviews ? listing.reviews.length : 0 %>)</span>
               <% } else { %>
-                <span style="color:#9ca3af; font-size:0.8rem;">No reviews yet</span>
+                <span style="color:var(--text-subtle);font-size:0.8rem;">New — no reviews</span>
               <% } %>
-              <span class="rating-count" style="margin-left: 4px;">
-                (<%= listing.reviews ? listing.reviews.length : 0 %>)
-              </span>
             </div>
-            <div class="card-price-row">
-              <div class="card-price">
-                <span class="price-rupee">₹</span><%= listing.price.toLocaleString("en-IN") %><span class="price-per">/night</span>
-                <i class="tax-info">&nbsp;+18% GST</i>
+            <div class="card-footer-price">
+              <div>
+                <span class="price-main-amount"><span class="price-symbol">₹</span><%= listing.price.toLocaleString("en-IN") %></span>
+                <span class="price-unit-label"> / night</span>
+                <span class="tax-gst-tag">&nbsp;+18% GST</span>
               </div>
             </div>
           </div>
         </div>
       </a>
-    </div>
-  <% } %>
-</div>
+    <% } %>
+  </div>
 <% } %>
 
 <script>
-  // Tax toggle
-  const taxSwitch = document.getElementById("flexSwitchCheckDefault");
-  if (taxSwitch) {
-    taxSwitch.addEventListener("change", () => {
-      document.querySelectorAll(".tax-info").forEach(el => {
-        el.style.display = taxSwitch.checked ? "inline" : "none";
+  const taxToggle = document.getElementById('taxToggle');
+  if (taxToggle) {
+    taxToggle.addEventListener('change', () => {
+      document.querySelectorAll('.tax-gst-tag').forEach(el => {
+        el.style.display = taxToggle.checked ? 'inline' : 'none';
       });
     });
   }
-
-  // Wishlist toggle
   function toggleWishlist(btn) {
     const icon = btn.querySelector('i');
     const isActive = btn.classList.toggle('active');
     icon.className = isActive ? 'fa-solid fa-heart' : 'fa-regular fa-heart';
-    icon.style.color = isActive ? '#FF5A5F' : '';
+    if (isActive) icon.style.color = 'var(--danger)';
+    else icon.style.color = '';
   }
-
-  // Stagger animations
-  document.querySelectorAll('.listings-grid .animate-fade-up').forEach((el, i) => {
-    el.style.animationDelay = `${i * 0.06}s`;
-    el.style.opacity = '0';
-    el.style.animation = `fadeInUp 0.5s ease ${i * 0.06}s forwards`;
-  });
 </script>

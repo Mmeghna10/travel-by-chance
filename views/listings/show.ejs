@@ -4,258 +4,309 @@
   const listing = <%- JSON.stringify(listing) %>;
 </script>
 
-<div class="show-page-header">
-
-  <!-- Breadcrumb -->
-  <div class="show-breadcrumb">
-    <a href="/listings">Home</a>
-    <i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i>
+<!-- Breadcrumb -->
+<div class="show-header-block">
+  <div class="show-breadcrumb-trail">
+    <a href="/listings">Stays</a>
+    <i class="fa-solid fa-chevron-right" style="font-size: 0.65rem; color: var(--text-subtle);"></i>
     <a href="/listings?category=<%= listing.category %>"><%= listing.category %></a>
-    <i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i>
-    <span><%= listing.title %></span>
+    <i class="fa-solid fa-chevron-right" style="font-size: 0.65rem; color: var(--text-subtle);"></i>
+    <span style="color: var(--text-main); font-weight: 600;"><%= listing.title %></span>
   </div>
 
-  <!-- Title & Meta -->
-  <h1 class="show-title"><%= listing.title %></h1>
-  <div class="show-meta">
-    <div class="show-meta-item">
-      <i class="fa-solid fa-star" style="color:#FFB400;"></i>&nbsp; 
-      <%= (listing.averageRating && listing.averageRating > 0) ? listing.averageRating : "No reviews" %>
-    </div>
-    <div class="show-meta-item"><i class="fa-solid fa-location-dot"></i> <%= listing.location %>, <%= listing.country %></div>
-    <div class="show-meta-item"><i class="fa-solid fa-tag"></i> <%= listing.category %></div>
-  </div>
-
-  <!-- Hero Image -->
-  <div class="show-img-wrapper">
-    <img src="<%= listing.image?.url || listing.image %>" alt="<%= listing.title %>">
-  </div>
-
-  <!-- Main Grid: Content + Sticky Sidebar -->
-  <div class="show-grid">
-
-    <!-- LEFT COLUMN: Details -->
+  <!-- Title & Actions Row -->
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-3">
     <div>
-
-      <!-- Host Info -->
-      <div class="show-section">
-        <div class="owner-block">
-          <div class="owner-avatar"><%= listing.owner.username.charAt(0).toUpperCase() %></div>
-          <div>
-            <div class="owner-name">Hosted by <%= listing.owner.username %></div>
-            <div class="owner-label">Superhost · Member since 2024</div>
+      <h1 class="show-heading-title"><%= listing.title %></h1>
+      <div class="show-submeta-bar">
+        <% if (listing.averageRating && listing.averageRating > 0) { %>
+          <div class="show-meta-pill">
+            <i class="fa-solid fa-star" style="color: var(--accent-gold);"></i>
+            <span><strong><%= listing.averageRating %></strong> &nbsp;·&nbsp; <%= listing.reviews.length %> <%= listing.reviews.length === 1 ? 'review' : 'reviews' %></span>
           </div>
+        <% } %>
+        <div class="show-meta-pill">
+          <i class="fa-solid fa-location-dot"></i>
+          <span><%= listing.location %>, <%= listing.country %></span>
+        </div>
+        <div class="show-meta-pill">
+          <i class="fa-solid fa-tag"></i>
+          <span><%= listing.category %></span>
         </div>
       </div>
+    </div>
+    <div style="display: flex; gap: 0.75rem; flex-shrink: 0;">
+      <button onclick="navigator.share ? navigator.share({title: '<%= listing.title %>', url: window.location.href}) : navigator.clipboard.writeText(window.location.href)"
+        style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1rem; border: 1px solid var(--border-main); border-radius: var(--radius-pill); background: white; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.22s;"
+        onmouseover="this.style.borderColor='var(--dark)';" onmouseout="this.style.borderColor='var(--border-main)';">
+        <i class="fa-solid fa-share-nodes"></i> Share
+      </button>
+      <button id="save-btn" onclick="this.classList.toggle('saved'); this.querySelector('i').className = this.classList.contains('saved') ? 'fa-solid fa-heart' : 'fa-regular fa-heart'; this.querySelector('span').textContent = this.classList.contains('saved') ? 'Saved' : 'Save';"
+        style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1rem; border: 1px solid var(--border-main); border-radius: var(--radius-pill); background: white; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.22s; color: var(--text-main);"
+        onmouseover="this.style.borderColor='var(--dark)';" onmouseout="this.style.borderColor='var(--border-main)';">
+        <i class="fa-regular fa-heart"></i> <span>Save</span>
+      </button>
+    </div>
+  </div>
+</div>
 
-      <!-- About -->
-      <div class="show-section">
-        <h2 class="show-section-title">About this stay</h2>
-        <p class="show-description"><%= listing.description %></p>
+<!-- Hero Image -->
+<div class="show-gallery-wrapper">
+  <img src="<%= listing.image?.url || listing.image %>" alt="<%= listing.title %>">
+</div>
+
+<!-- Main 2-Column Grid -->
+<div class="show-content-grid" style="margin-bottom: 4rem;">
+
+  <!-- LEFT: Details Column -->
+  <div>
+
+    <!-- Host Info -->
+    <div class="host-profile-card">
+      <div class="host-avatar-box"><%= listing.owner.username.charAt(0).toUpperCase() %></div>
+      <div>
+        <div class="host-name-title">Hosted by <%= listing.owner.username %></div>
+        <div class="host-sub-text"><i class="fa-solid fa-badge-check me-1" style="color: var(--accent-teal);"></i> Superhost &nbsp;·&nbsp; Member since 2024</div>
       </div>
+    </div>
 
-      <!-- Amenities -->
-      <div class="show-section">
-        <h2 class="show-section-title">What's included</h2>
-        <div class="amenities-grid">
-          <div class="amenity-item"><i class="fa-solid fa-wifi"></i> Free WiFi</div>
-          <div class="amenity-item"><i class="fa-solid fa-kitchen-set"></i> Kitchen</div>
-          <div class="amenity-item"><i class="fa-solid fa-snowflake"></i> Air Conditioning</div>
-          <div class="amenity-item"><i class="fa-solid fa-car"></i> Free Parking</div>
-          <div class="amenity-item"><i class="fa-solid fa-tv"></i> Smart TV</div>
-          <div class="amenity-item"><i class="fa-solid fa-dumbbell"></i> Gym Access</div>
-          <div class="amenity-item"><i class="fa-solid fa-mug-hot"></i> Complimentary Breakfast</div>
-          <div class="amenity-item"><i class="fa-solid fa-shield-halved"></i> 24/7 Security</div>
+    <!-- About -->
+    <div class="show-section-block">
+      <h2 class="show-section-heading">About this stay</h2>
+      <p class="show-body-desc"><%= listing.description %></p>
+    </div>
+
+    <!-- What's Included -->
+    <div class="show-section-block">
+      <h2 class="show-section-heading">What's included</h2>
+      <div class="amenities-flex-grid">
+        <div class="amenity-chip"><i class="fa-solid fa-wifi"></i> Free WiFi</div>
+        <div class="amenity-chip"><i class="fa-solid fa-kitchen-set"></i> Kitchen</div>
+        <div class="amenity-chip"><i class="fa-solid fa-snowflake"></i> Air Conditioning</div>
+        <div class="amenity-chip"><i class="fa-solid fa-car"></i> Free Parking</div>
+        <div class="amenity-chip"><i class="fa-solid fa-tv"></i> Smart TV</div>
+        <div class="amenity-chip"><i class="fa-solid fa-dumbbell"></i> Gym Access</div>
+        <div class="amenity-chip"><i class="fa-solid fa-mug-hot"></i> Breakfast</div>
+        <div class="amenity-chip"><i class="fa-solid fa-shield-halved"></i> 24/7 Security</div>
+      </div>
+    </div>
+
+    <!-- Map -->
+    <div class="show-section-block">
+      <h2 class="show-section-heading">Where you'll be</h2>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+        <i class="fa-solid fa-location-dot" style="color: var(--primary);"></i>&nbsp;
+        <%= listing.location %>, <%= listing.country %> &nbsp;·&nbsp; Exact address shared after booking
+      </p>
+      <div id="map"></div>
+    </div>
+
+    <!-- Owner Edit/Delete Actions -->
+    <% if(typeof currUser !== 'undefined' && currUser && listing.owner._id.equals(currUser._id)) { %>
+      <div class="show-section-block">
+        <h2 class="show-section-heading">Manage this listing</h2>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <a href="/listings/<%= listing._id %>/edit"
+            style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; background: var(--dark); color: white; border-radius: var(--radius-pill); font-size: 0.9rem; font-weight: 700; text-decoration: none; transition: all 0.22s;">
+            <i class="fa-solid fa-pen-to-square"></i> Edit Listing
+          </a>
+          <form method="POST" action="/listings/<%= listing._id %>?_method=DELETE" onsubmit="return confirm('Delete this listing permanently?')">
+            <button type="submit"
+              style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; background: white; color: var(--danger); border: 1.5px solid var(--danger); border-radius: var(--radius-pill); font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.22s;"
+              onmouseover="this.style.background='var(--danger)'; this.style.color='white';"
+              onmouseout="this.style.background='white'; this.style.color='var(--danger)';">
+              <i class="fa-solid fa-trash"></i> Delete
+            </button>
+          </form>
         </div>
       </div>
+    <% } %>
 
-      <!-- Map -->
-      <div class="show-section">
-        <h2 class="show-section-title">Where you'll be</h2>
-        <p style="font-size:0.85rem; color:#6b7280; margin-bottom:0.75rem;">
-          <i class="fa-solid fa-location-dot" style="color:#FF5A5F;"></i> &nbsp;<%= listing.location %>, <%= listing.country %>
-          &nbsp;·&nbsp; Exact address shared after booking
-        </p>
-        <div id="map"></div>
+    <!-- Reviews Section -->
+    <div>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
+        <h2 class="show-section-heading" style="margin: 0;">
+          <i class="fa-solid fa-star" style="color: var(--accent-gold); font-size: 1.1rem;"></i>
+          &nbsp;<%= (listing.averageRating && listing.averageRating > 0) ? listing.averageRating : '0' %>
+          &nbsp;·&nbsp; <%= listing.reviews.length %> <%= listing.reviews.length === 1 ? 'review' : 'reviews' %>
+        </h2>
       </div>
 
-      <!-- Owner Actions (Edit/Delete) -->
-      <% if(typeof currUser !== 'undefined' && currUser && listing.owner._id.equals(currUser._id)) { %>
-        <div class="show-section">
-          <h2 class="show-section-title">Manage this listing</h2>
-          <div class="btns">
-            <a href="/listings/<%= listing._id %>/edit" class="btn-nav-action btn-edit">
-              <i class="fa-solid fa-pen-to-square me-1"></i>Edit Listing
-            </a>
-            <form method="POST" action="/listings/<%= listing._id %>?_method=DELETE" onsubmit="return confirm('Are you sure you want to delete this listing?')">
-              <button class="btn btn-danger-outline" style="padding: 0.55rem 1.3rem; border-radius: 50px; font-weight: 600; background: transparent; cursor: pointer;">
-                <i class="fa-solid fa-trash me-1"></i>Delete
-              </button>
-            </form>
-          </div>
+      <!-- Leave a Review -->
+      <% if(typeof currUser !== 'undefined' && currUser) { %>
+        <div style="background: white; border: 1px solid var(--border-main); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem;">
+          <h3 style="font-size: 1.05rem; font-weight: 800; margin-bottom: 1.25rem;">Leave a Review</h3>
+          <form action="/listings/<%= listing.id %>/reviews" method="POST" novalidate class="needs-validation">
+            <div class="mb-3">
+              <label class="form-label-pro">Your Rating</label>
+              <fieldset class="starability-slot">
+                <input type="radio" id="no-rate" class="input-no-rate" name="review[rating]" value="1" checked aria-label="No rating." />
+                <input type="radio" id="first-rate1" name="review[rating]" value="1" />
+                <label for="first-rate1" title="Terrible">1 star</label>
+                <input type="radio" id="first-rate2" name="review[rating]" value="2" />
+                <label for="first-rate2" title="Not good">2 stars</label>
+                <input type="radio" id="first-rate3" name="review[rating]" value="3" />
+                <label for="first-rate3" title="Average">3 stars</label>
+                <input type="radio" id="first-rate4" name="review[rating]" value="4" />
+                <label for="first-rate4" title="Very good">4 stars</label>
+                <input type="radio" id="first-rate5" name="review[rating]" value="5" />
+                <label for="first-rate5" title="Amazing">5 stars</label>
+              </fieldset>
+            </div>
+            <div class="mb-3">
+              <label for="comment" class="form-label-pro">Your Review</label>
+              <textarea name="review[comment]" id="comment" rows="4" class="form-control form-control-pro" placeholder="Share your experience with this stay..." required></textarea>
+              <div class="invalid-feedback">Please write a short review.</div>
+            </div>
+            <button type="submit"
+              style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.75rem; background: var(--dark); color: white; border: none; border-radius: var(--radius-pill); font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.22s;"
+              onmouseover="this.style.background='var(--primary)';"
+              onmouseout="this.style.background='var(--dark)';">
+              Submit Review
+            </button>
+          </form>
         </div>
       <% } %>
 
-      <!-- Reviews -->
-      <div class="reviews-section">
-        <h2 class="show-section-title" style="font-size:1.2rem; margin-bottom:1rem;">
-          <i class="fa-solid fa-star" style="color:#FFB400;"></i> 
-          <%= (listing.averageRating && listing.averageRating > 0) ? listing.averageRating : "0" %> &nbsp;·&nbsp; <%= listing.reviews.length %> <%= listing.reviews.length === 1 ? 'review' : 'reviews' %>
-        </h2>
-
-        <% if(typeof currUser !== 'undefined' && currUser) { %>
-          <div class="review-form-card">
-            <h3 style="font-size:1rem; font-weight:700; margin-bottom:1rem; color:#1a1a2e;">Leave a Review</h3>
-            <form action="/listings/<%= listing.id %>/reviews" method="POST" novalidate class="needs-validation">
-              <div class="mb-3">
-                <label class="form-label">Rating</label>
-                <fieldset class="starability-slot">
-                  <input type="radio" id="no-rate" class="input-no-rate" name="review[rating]" value="1" checked aria-label="No rating." />
-                  <input type="radio" id="first-rate1" name="review[rating]" value="1" />
-                  <label for="first-rate1" title="Terrible">1 star</label>
-                  <input type="radio" id="first-rate2" name="review[rating]" value="2" />
-                  <label for="first-rate2" title="Not good">2 stars</label>
-                  <input type="radio" id="first-rate3" name="review[rating]" value="3" />
-                  <label for="first-rate3" title="Average">3 stars</label>
-                  <input type="radio" id="first-rate4" name="review[rating]" value="4" />
-                  <label for="first-rate4" title="Very good">4 stars</label>
-                  <input type="radio" id="first-rate5" name="review[rating]" value="5" />
-                  <label for="first-rate5" title="Amazing">5 stars</label>
-                </fieldset>
-              </div>
-              <div class="mb-3">
-                <label for="comment" class="form-label">Your review</label>
-                <textarea name="review[comment]" id="comment" rows="4" class="form-control" placeholder="Share your experience..." required></textarea>
-                <div class="invalid-feedback">Please write a short review.</div>
-              </div>
-              <button class="btn submit-btn">Submit Review</button>
-            </form>
-          </div>
-        <% } %>
-
-        <% if(listing.reviews.length > 0) { %>
+      <!-- Reviews List -->
+      <% if(listing.reviews.length > 0) { %>
+        <div class="row g-3">
           <% for(let review of listing.reviews) { %>
-            <div class="review-card">
-              <div class="review-header">
-                <div class="reviewer-avatar"><%= review.author.username.charAt(0).toUpperCase() %></div>
-                <div>
-                  <div class="reviewer-name">@<%= review.author.username %></div>
-                  <p class="starability-result mb-0" data-rating="<%= review.rating %>"></p>
+            <div class="col-12 col-md-6">
+              <div class="review-card-pro">
+                <div class="reviewer-info-row">
+                  <div class="reviewer-avatar-circle"><%= review.author.username.charAt(0).toUpperCase() %></div>
+                  <div>
+                    <div style="font-weight: 800; font-size: 0.92rem;">@<%= review.author.username %></div>
+                    <p class="starability-result mb-0" data-rating="<%= review.rating %>"></p>
+                  </div>
                 </div>
+                <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.65; margin: 0;"><%= review.comment %></p>
+                <% if(typeof currUser !== 'undefined' && currUser && review.author._id.equals(currUser._id)) { %>
+                  <form method="POST" action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE" style="margin-top: 0.85rem;">
+                    <button type="submit"
+                      style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.85rem; border: 1px solid var(--border-main); border-radius: var(--radius-pill); background: white; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.22s;"
+                      onmouseover="this.style.background='#FFF1F2'; this.style.color='var(--danger)'; this.style.borderColor='var(--primary-border)';"
+                      onmouseout="this.style.background='white'; this.style.color='var(--text-muted)'; this.style.borderColor='var(--border-main)';">
+                      <i class="fa-solid fa-trash"></i> Delete
+                    </button>
+                  </form>
+                <% } %>
               </div>
-              <p class="review-text"><%= review.comment %></p>
-              <% if(typeof currUser !== 'undefined' && currUser && review.author._id.equals(currUser._id)) { %>
-                <form method="POST" action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE">
-                  <button class="delete-review-btn" type="submit">
-                    <i class="fa-solid fa-trash me-1"></i>Delete review
-                  </button>
-                </form>
-              <% } %>
             </div>
           <% } %>
+        </div>
+      <% } else { %>
+        <div style="text-align: center; padding: 3rem 1rem; background: var(--bg-subtle); border-radius: var(--radius-md);">
+          <i class="fa-regular fa-comment" style="font-size: 2.5rem; color: var(--border-dark); margin-bottom: 1rem; display: block;"></i>
+          <p style="color: var(--text-muted); margin: 0;">No reviews yet — be the first to share your experience!</p>
+        </div>
+      <% } %>
+    </div>
+  </div><!-- END LEFT COLUMN -->
+
+  <!-- RIGHT: Sticky Booking Widget -->
+  <div>
+    <div class="sticky-reserve-card">
+      <div class="reserve-price-line">
+        ₹<%= listing.price.toLocaleString("en-IN") %> <span>/ night</span>
+      </div>
+      <div class="reserve-rating-sub">
+        <% if (listing.averageRating && listing.averageRating > 0) { %>
+          <i class="fa-solid fa-star" style="color: var(--accent-gold);"></i>
+          <strong><%= listing.averageRating %></strong> &nbsp;·&nbsp; <%= listing.reviews.length %> <%= listing.reviews.length === 1 ? 'review' : 'reviews' %>
         <% } else { %>
-          <p style="color:#9ca3af; font-size:0.9rem; text-align:center; padding:2rem 0;">No reviews yet — be the first to review!</p>
+          <span>New listing — no reviews yet</span>
         <% } %>
       </div>
 
-    </div><!-- END LEFT COLUMN -->
-
-    <!-- RIGHT COLUMN: Price Widget -->
-    <div>
-      <div class="price-widget">
-        <div class="price-widget-price">
-          ₹<%= listing.price.toLocaleString("en-IN") %> <sub>/ night</sub>
+      <!-- Date Pickers -->
+      <div class="reserve-date-picker-box">
+        <div class="picker-cell">
+          <div class="picker-label">Check-in</div>
+          <input type="date" class="picker-input" id="checkin-date">
         </div>
-        <div class="price-widget-rating">
-          <i class="fa-solid fa-star" style="color:#FFB400;"></i>
-          <%= (listing.averageRating && listing.averageRating > 0) ? listing.averageRating : "0" %> &nbsp;·&nbsp; <%= listing.reviews.length %> <%= listing.reviews.length === 1 ? 'review' : 'reviews' %>
+        <div class="picker-cell">
+          <div class="picker-label">Check-out</div>
+          <input type="date" class="picker-input" id="checkout-date">
         </div>
-
-        <!-- Date Picker -->
-        <div class="booking-dates mb-2">
-          <div class="booking-date-cell">
-            <div class="booking-date-label">Check-in</div>
-            <input type="date" class="booking-date-input" id="checkin-date">
-          </div>
-          <div class="booking-date-cell">
-            <div class="booking-date-label">Check-out</div>
-            <input type="date" class="booking-date-input" id="checkout-date">
-          </div>
-        </div>
-
-        <% if (typeof currUser !== 'undefined' && currUser) { %>
-          <button class="booking-book-btn" onclick="openBookingModal()">Reserve Now</button>
-        <% } else { %>
-          <a class="booking-book-btn text-center d-block text-decoration-none" href="/login" style="line-height:2.4rem;">Login to Reserve</a>
-        <% } %>
-
-        <p style="text-align:center; font-size:0.78rem; color:#9ca3af; margin-top:0.75rem;">You won't be charged yet</p>
-
-        <hr class="price-widget-divider">
-
-        <div class="price-breakdown">
-          <div class="price-breakdown-row">
-            <span>₹<%= listing.price.toLocaleString("en-IN") %> × <span id="nights-count">1</span> night</span>
-            <span id="subtotal">₹<%= listing.price.toLocaleString("en-IN") %></span>
-          </div>
-          <div class="price-breakdown-row">
-            <span>Cleaning fee</span>
-            <span>₹<%= Math.round(listing.price * 0.05).toLocaleString("en-IN") %></span>
-          </div>
-          <div class="price-breakdown-row">
-            <span>Service fee</span>
-            <span>₹<%= Math.round(listing.price * 0.12).toLocaleString("en-IN") %></span>
-          </div>
-          <div class="price-breakdown-row total">
-            <span>Total before taxes</span>
-            <span id="total-price">₹<%= Math.round(listing.price * 1.17).toLocaleString("en-IN") %></span>
-          </div>
-        </div>
-
-        <hr class="price-widget-divider">
-        <p style="font-size:0.8rem; color:#9ca3af; text-align:center; margin:0;">
-          <i class="fa-solid fa-shield-halved" style="color:#00A699;"></i> &nbsp;Your booking is protected
-        </p>
       </div>
-    </div><!-- END RIGHT COLUMN -->
 
-  </div><!-- END SHOW GRID -->
-</div>
+      <!-- Reserve Button -->
+      <% if (typeof currUser !== 'undefined' && currUser) { %>
+        <button class="btn-reserve-action" onclick="openBookingModal()">Reserve Now</button>
+      <% } else { %>
+        <a class="btn-reserve-action" href="/login" style="text-decoration: none; line-height: 1.6;">Log in to Reserve</a>
+      <% } %>
+
+      <p style="text-align: center; font-size: 0.8rem; color: var(--text-subtle); margin-top: 0.85rem;">You won't be charged yet</p>
+
+      <div style="border-top: 1px solid var(--border-light); margin: 1.25rem 0; padding-top: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          <span>₹<%= listing.price.toLocaleString("en-IN") %> × <span id="nights-count">1</span> night</span>
+          <span id="subtotal">₹<%= listing.price.toLocaleString("en-IN") %></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          <span>Cleaning fee</span>
+          <span>₹<%= Math.round(listing.price * 0.05).toLocaleString("en-IN") %></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          <span>Service fee</span>
+          <span>₹<%= Math.round(listing.price * 0.12).toLocaleString("en-IN") %></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 800; color: var(--dark); border-top: 1px solid var(--border-light); padding-top: 0.75rem; margin-top: 0.5rem;">
+          <span>Total before taxes</span>
+          <span id="total-price">₹<%= Math.round(listing.price * 1.17).toLocaleString("en-IN") %></span>
+        </div>
+      </div>
+
+      <div style="text-align: center; font-size: 0.82rem; color: var(--text-subtle);">
+        <i class="fa-solid fa-shield-halved" style="color: var(--accent-teal);"></i>&nbsp; Your booking is protected
+      </div>
+    </div>
+  </div><!-- END RIGHT COLUMN -->
+
+</div><!-- END GRID -->
 
 <!-- Booking Modal -->
-<div class="modal fade booking-modal" id="bookingModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="fa-solid fa-calendar-check me-2"></i>Confirm Your Booking</h5>
+    <div class="modal-content" style="border-radius: var(--radius-lg); border: none; box-shadow: var(--shadow-xl); overflow: hidden;">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-light); padding: 1.25rem 1.5rem;">
+        <h5 class="modal-title" style="font-weight: 800; font-size: 1.1rem;">
+          <i class="fa-solid fa-calendar-check me-2" style="color: var(--primary);"></i>Confirm Booking
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <div class="modal-price-badge">
-          <span class="modal-price-num">₹<%= listing.price.toLocaleString("en-IN") %></span>
-          <span class="modal-price-label">/ night</span>
-        </div>
-        <h6 style="font-weight:700; margin-bottom:0.3rem;"><%= listing.title %></h6>
-        <p style="font-size:0.83rem; color:#6b7280; margin-bottom:1.2rem;"><i class="fa-solid fa-location-dot" style="color:#FF5A5F;"></i> <%= listing.location %>, <%= listing.country %></p>
-
-        <div style="background:#f8f9fa; border-radius:12px; padding:1rem; margin-bottom:1.2rem;">
-          <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:0.4rem;">
-            <span style="font-weight:600;">Check-in</span> <span id="modal-checkin" style="color:#6b7280;">-</span>
+      <div class="modal-body" style="padding: 1.5rem;">
+        <div style="background: var(--bg-subtle); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--dark); margin-bottom: 0.2rem;">
+            ₹<%= listing.price.toLocaleString("en-IN") %> <span style="font-size: 0.9rem; font-weight: 400; color: var(--text-muted);">/ night</span>
           </div>
-          <div style="display:flex; justify-content:space-between; font-size:0.88rem; margin-bottom:0.4rem;">
-            <span style="font-weight:600;">Check-out</span> <span id="modal-checkout" style="color:#6b7280;">-</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; font-size:0.88rem; border-top:1px solid #e5e7eb; padding-top:0.5rem; margin-top:0.4rem;">
-            <span style="font-weight:700;">Total</span> <span id="modal-total" style="font-weight:800; color:#FF5A5F;">-</span>
+          <div style="font-weight: 700; margin-bottom: 0.25rem;"><%= listing.title %></div>
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            <i class="fa-solid fa-location-dot me-1" style="color: var(--primary);"></i><%= listing.location %>, <%= listing.country %>
           </div>
         </div>
-
-        <button class="booking-confirm-btn" onclick="confirmBooking()">
+        <div style="background: white; border: 1px solid var(--border-main); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-light);">
+            <span style="font-weight: 700; font-size: 0.9rem;">Check-in</span>
+            <span id="modal-checkin" style="color: var(--text-muted); font-size: 0.9rem;">—</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-light);">
+            <span style="font-weight: 700; font-size: 0.9rem;">Check-out</span>
+            <span id="modal-checkout" style="color: var(--text-muted); font-size: 0.9rem;">—</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 0.85rem 1rem;">
+            <span style="font-weight: 800; font-size: 0.95rem;">Total</span>
+            <span id="modal-total" style="font-weight: 800; font-size: 0.95rem; color: var(--primary);">—</span>
+          </div>
+        </div>
+        <button class="btn-reserve-action" id="confirm-booking-btn" onclick="confirmBooking()" style="font-size: 0.95rem;">
           <i class="fa-solid fa-check me-2"></i>Request to Book
         </button>
-
-        <p style="text-align:center; font-size:0.78rem; color:#9ca3af; margin-top:0.75rem;">
-          Online payment coming soon · For now, the host will contact you to confirm
+        <p style="text-align: center; font-size: 0.8rem; color: var(--text-subtle); margin-top: 0.85rem;">
+          Host will contact you to confirm · No charge until confirmed
         </p>
       </div>
     </div>
@@ -264,7 +315,6 @@
 
 <script src="/js/map.js"></script>
 <script>
-// Date-based price calculation
 const pricePerNight = <%= listing.price %>;
 const checkinEl = document.getElementById('checkin-date');
 const checkoutEl = document.getElementById('checkout-date');
@@ -272,7 +322,6 @@ const nightsEl = document.getElementById('nights-count');
 const subtotalEl = document.getElementById('subtotal');
 const totalEl = document.getElementById('total-price');
 
-// Set min date to today
 const today = new Date().toISOString().split('T')[0];
 if (checkinEl) checkinEl.min = today;
 if (checkoutEl) checkoutEl.min = today;
@@ -280,9 +329,9 @@ if (checkoutEl) checkoutEl.min = today;
 function updatePrice() {
   if (!checkinEl.value || !checkoutEl.value) return;
   const d1 = new Date(checkinEl.value), d2 = new Date(checkoutEl.value);
-  const nights = Math.max(1, Math.round((d2 - d1) / (1000 * 60 * 60 * 24)));
   if (d2 <= d1) { checkoutEl.setCustomValidity('Check-out must be after check-in'); return; }
   checkoutEl.setCustomValidity('');
+  const nights = Math.max(1, Math.round((d2 - d1) / (1000 * 60 * 60 * 24)));
   const sub = pricePerNight * nights;
   const clean = Math.round(pricePerNight * 0.05);
   const service = Math.round(pricePerNight * 0.12);
@@ -299,62 +348,47 @@ function openBookingModal() {
   const checkin = checkinEl ? checkinEl.value : '';
   const checkout = checkoutEl ? checkoutEl.value : '';
   if (!checkin || !checkout) {
-    alert("Please select check-in and check-out dates before reserving.");
+    alert('Please select check-in and check-out dates before reserving.');
     return;
   }
-  const d1 = new Date(checkin);
-  const d2 = new Date(checkout);
-  const nights = (d1 && d2 && d2 > d1) ? Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) : 1;
+  const d1 = new Date(checkin), d2 = new Date(checkout);
+  const nights = (d2 > d1) ? Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) : 1;
   const total = Math.round(pricePerNight * nights * 1.17);
-
   document.getElementById('modal-checkin').textContent = checkin;
   document.getElementById('modal-checkout').textContent = checkout;
   document.getElementById('modal-total').textContent = '₹' + total.toLocaleString('en-IN');
-
   new bootstrap.Modal(document.getElementById('bookingModal')).show();
 }
 
 async function confirmBooking() {
   const checkin = checkinEl ? checkinEl.value : '';
   const checkout = checkoutEl ? checkoutEl.value : '';
-  if (!checkin || !checkout) {
-    alert("Please select check-in and check-out dates.");
-    return;
-  }
-  
-  const btn = document.querySelector('.booking-confirm-btn');
-  const originalHtml = btn.innerHTML;
+  if (!checkin || !checkout) { alert('Please select dates.'); return; }
+  const btn = document.getElementById('confirm-booking-btn');
+  const orig = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Processing...';
-
   try {
-    const response = await fetch('/bookings', {
+    const res = await fetch('/bookings', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        listingId: "<%= listing._id %>",
-        checkIn: checkin,
-        checkOut: checkout,
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listingId: "<%= listing._id %>", checkIn: checkin, checkOut: checkout })
     });
-    
-    const result = await response.json();
+    const result = await res.json();
     if (result.success) {
       btn.innerHTML = '<i class="fa-solid fa-check me-2"></i>Booking Confirmed!';
-      btn.style.background = '#00A699';
+      btn.style.background = 'var(--success)';
       setTimeout(() => {
         bootstrap.Modal.getInstance(document.getElementById('bookingModal')).hide();
         window.location.href = '/bookings';
       }, 2000);
     } else {
-      btn.innerHTML = originalHtml;
+      btn.innerHTML = orig;
       btn.disabled = false;
       alert(result.message || 'Booking failed. Please try again.');
     }
-  } catch (error) {
-    btn.innerHTML = originalHtml;
+  } catch (e) {
+    btn.innerHTML = orig;
     btn.disabled = false;
     alert('An error occurred. Please try again.');
   }

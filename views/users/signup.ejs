@@ -1,55 +1,88 @@
 <% layout("/layouts/boilerplate") %>
 
-<div class="row mt-3">
-    <h1 class="col-6 offset-3">SignUp on TravelByChance</h1>
-  <div class="col-6 offset-3">
+<div class="auth-page-container px-3">
+  <div class="auth-card-pro">
+    <div style="text-align:center;margin-bottom:2rem;">
+      <div style="width:54px;height:54px;background:linear-gradient(135deg,var(--espresso),var(--primary));border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;color:var(--cream);font-size:1.3rem;box-shadow:var(--shadow-primary);">
+        <i class="fa-solid fa-mountain-sun"></i>
+      </div>
+      <h1 class="auth-header-title">Create your account</h1>
+      <p class="auth-header-sub">Join TravelByChance and start exploring</p>
+    </div>
+
     <form action="/signup" method="POST" class="needs-validation" novalidate>
-    <div class="mb-3">
-      <label for="username" class="form-label">Username</label>
-      <input
-        name="username"
-        id="username"
-        type="text"
-        class="form-control"
-        required
-      />
-      <div class="valid-feedback">Looks good!</div>
-    </div>
-    <div class="mb-3">
-      <label for="email" class="form-label">Email</label>
-      <input
-        name="email"
-        id="email"
-        type="email"
-        class="form-control"
-        required
-      />
-      <div class="valid-feedback">Looks good!</div>
-    </div>
-    <div class="mb-3">
-      <label for="password" class="form-label">Password</label>
-      <input
-        name="password"
-        id="password"
-        type="password"
-        class="form-control"
-        required
-      />
-      <div class="valid-feedback">Looks good!</div>
-    </div>
+      <div class="mb-4">
+        <label for="username" class="form-label-pro">Username</label>
+        <input name="username" id="username" type="text" class="form-control form-control-pro" placeholder="Choose a username" required />
+        <div class="invalid-feedback">Please choose a username.</div>
+      </div>
+      <div class="mb-4">
+        <label for="email" class="form-label-pro">Email Address</label>
+        <input name="email" id="email" type="email" class="form-control form-control-pro" placeholder="you@example.com" required />
+        <div class="invalid-feedback">Please enter a valid email.</div>
+      </div>
+      <div class="mb-4">
+        <label for="password" class="form-label-pro">Password</label>
+        <input name="password" id="password" type="password" class="form-control form-control-pro" placeholder="Create a strong password" required />
+        <div class="invalid-feedback">Please enter a password.</div>
+      </div>
 
-    <div class="mb-3">
-      <label for="role" class="form-label">Register As</label>
-      <select name="role" id="role" class="form-select" required>
-        <option value="customer" selected>Customer (Browse & Book Stays)</option>
-        <option value="admin">Admin (Manage Listings & Bookings)</option>
-      </select>
-      <div class="valid-feedback">Looks good!</div>
-    </div>
+      <!-- Role Selector -->
+      <div class="mb-4">
+        <label class="form-label-pro">Register As</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.5rem;">
+          <label style="cursor:pointer;">
+            <input type="radio" name="role" value="customer" id="role-customer" class="visually-hidden" checked>
+            <div id="role-card-customer" style="border:2px solid var(--primary);border-radius:var(--radius-sm);padding:1.1rem 0.75rem;text-align:center;background:var(--primary-light);transition:all 0.22s;">
+              <i class="fa-solid fa-user" id="role-icon-customer" style="font-size:1.4rem;color:var(--primary);margin-bottom:0.5rem;display:block;"></i>
+              <div style="font-weight:700;font-size:0.88rem;color:var(--dark);">Customer</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.15rem;">Browse & Book Stays</div>
+            </div>
+          </label>
+          <label style="cursor:pointer;">
+            <input type="radio" name="role" value="admin" id="role-admin" class="visually-hidden">
+            <div id="role-card-admin" style="border:2px solid var(--border-main);border-radius:var(--radius-sm);padding:1.1rem 0.75rem;text-align:center;background:white;transition:all 0.22s;">
+              <i class="fa-solid fa-house-laptop" id="role-icon-admin" style="font-size:1.4rem;color:var(--text-subtle);margin-bottom:0.5rem;display:block;"></i>
+              <div style="font-weight:700;font-size:0.88rem;color:var(--dark);">Host / Admin</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.15rem;">Manage Listings</div>
+            </div>
+          </label>
+        </div>
+      </div>
 
-          <button class="btn btn-dark add-btn mt-3">SignUp</button>
-
-
+      <button type="submit" class="btn-form-primary">
+        <i class="fa-solid fa-user-plus"></i>Create Account
+      </button>
     </form>
+
+    <p style="text-align:center;margin-top:1.75rem;font-size:0.9rem;color:var(--text-muted);">
+      Already have an account?
+      <a href="/login" style="color:var(--primary);font-weight:700;text-decoration:none;">Log in</a>
+    </p>
   </div>
 </div>
+
+<script>
+  const customerRadio = document.getElementById('role-customer');
+  const adminRadio = document.getElementById('role-admin');
+
+  function updateRoleCards() {
+    if (customerRadio.checked) {
+      document.getElementById('role-card-customer').style.borderColor = 'var(--primary)';
+      document.getElementById('role-card-customer').style.background = 'var(--primary-light)';
+      document.getElementById('role-icon-customer').style.color = 'var(--primary)';
+      document.getElementById('role-card-admin').style.borderColor = 'var(--border-main)';
+      document.getElementById('role-card-admin').style.background = 'white';
+      document.getElementById('role-icon-admin').style.color = 'var(--text-subtle)';
+    } else {
+      document.getElementById('role-card-admin').style.borderColor = 'var(--primary)';
+      document.getElementById('role-card-admin').style.background = 'var(--primary-light)';
+      document.getElementById('role-icon-admin').style.color = 'var(--primary)';
+      document.getElementById('role-card-customer').style.borderColor = 'var(--border-main)';
+      document.getElementById('role-card-customer').style.background = 'white';
+      document.getElementById('role-icon-customer').style.color = 'var(--text-subtle)';
+    }
+  }
+  customerRadio.addEventListener('change', updateRoleCards);
+  adminRadio.addEventListener('change', updateRoleCards);
+</script>

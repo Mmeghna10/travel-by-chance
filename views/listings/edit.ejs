@@ -1,96 +1,121 @@
 <% layout('/layouts/boilerplate') %>
-<div class="row mt-3 ">
-  <div class="col-8 offset-2">
-    <div class="mt-3 mb-4">
-        <h3>Edit your Listings</h3>
-        </div>
-    <form method="POST" action="/listings/<%= listing._id%>?_method=PUT" novalidate class="needs-validation" enctype="multipart/form-data">
-      <div class="mb-3">
-        <label for="title" class="form-label">Title</label>
-        <input
-          name="listing[title]"
-          value="<%= listing.title %>"
-          type="text"
-          class="form-control"
-          required
-        />
+
+<div style="max-width: 680px; margin: 2.5rem auto; padding: 0 1rem;">
+
+  <!-- Header -->
+  <div style="text-align: center; margin-bottom: 2.5rem;">
+    <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #6366F1, #818CF8); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.4rem; box-shadow: 0 4px 14px rgba(99,102,241,0.3);">
+      <i class="fa-solid fa-pen-to-square"></i>
+    </div>
+    <h1 style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.35rem;">Edit Your Listing</h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Update your property details to keep it accurate and attractive</p>
+  </div>
+
+  <div style="background: white; border: 1px solid var(--border-main); border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-md);">
+    <form method="POST" action="/listings/<%= listing._id %>?_method=PUT" novalidate class="needs-validation" enctype="multipart/form-data">
+
+      <!-- Title -->
+      <div class="mb-4">
+        <label for="title" class="form-label-pro">Property Title <span style="color: var(--primary);">*</span></label>
+        <input name="listing[title]" id="title" value="<%= listing.title %>" type="text" class="form-control form-control-pro" required />
         <div class="invalid-feedback">Title should be valid!</div>
       </div>
-      <div class="mb-3">
-        <label for="description" class="form-label">Description</label>
-        <textarea name="listing[description]" class="form-control" required>
-      <%= listing.description %> </textarea
-        >
+
+      <!-- Description -->
+      <div class="mb-4">
+        <label for="description" class="form-label-pro">Description <span style="color: var(--primary);">*</span></label>
+        <textarea name="listing[description]" id="description" class="form-control form-control-pro" rows="4" required><%= listing.description %></textarea>
         <div class="invalid-feedback">Description should be valid!</div>
       </div>
-      <div class="mb-3">
-        Original Listing Image <br>
-        <img src="<%= originalImageUrl %>" alt="uploadedImage" />
+
+      <!-- Current Image Preview -->
+      <div class="mb-4">
+        <div class="form-label-pro" style="margin-bottom: 0.75rem;">Current Image</div>
+        <div style="border-radius: var(--radius-sm); overflow: hidden; height: 200px; border: 1px solid var(--border-main);">
+          <img src="<%= originalImageUrl %>" alt="Current listing image" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
       </div>
-      <div class="mb-3">
-        <label for="image" class="form-label">Upload New Image</label>
-        <input
-          name="listing[image]"
-          type="file"
-          class="form-control"
-        />
+
+      <!-- New Image Upload -->
+      <div class="mb-4">
+        <label for="image" class="form-label-pro">Upload New Image <span style="font-size: 0.78rem; font-weight: 400; color: var(--text-subtle);">(Optional — leave empty to keep current)</span></label>
+        <input name="listing[image]" id="image" type="file" class="form-control form-control-pro" accept="image/*" />
       </div>
-      <div class="row">
-        <div class="mb-3 col-md-4">
-          <label for="price" class="form-label">Price</label>
-          <input
-            name="listing[price]"
-            value="<%= listing.price %>"
-            
-            class="form-control"
-            required
-          />
+
+      <!-- Price + Country -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-5">
+          <label for="price" class="form-label-pro">Price per Night (₹) <span style="color: var(--primary);">*</span></label>
+          <input name="listing[price]" id="price" value="<%= listing.price %>" type="number" class="form-control form-control-pro" required min="1" />
           <div class="invalid-feedback">Price should be valid!</div>
         </div>
-        <div class="mb-3 col-md-8">
-          <label for="country" class="form-label">Country</label>
-          <input
-            name="listing[country]"
-            value="<%= listing.country %>"
-            type="text"
-            class="form-control"
-            required
-          />
+        <div class="col-md-7">
+          <label for="country" class="form-label-pro">Country <span style="color: var(--primary);">*</span></label>
+          <input name="listing[country]" id="country" value="<%= listing.country %>" type="text" class="form-control form-control-pro" required />
           <div class="invalid-feedback">Country should be valid!</div>
         </div>
       </div>
-      <div class="mb-3">
-        <label for="location" class="form-label">Location</label>
-        <input
-          name="listing[location]"
-          value="<%= listing.location %>"
-          type="text"
-          class="form-control"
-          required
-        />
+
+      <!-- Location -->
+      <div class="mb-4">
+        <label for="location" class="form-label-pro">City / Location <span style="color: var(--primary);">*</span></label>
+        <input name="listing[location]" id="location" value="<%= listing.location %>" type="text" class="form-control form-control-pro" required />
         <div class="invalid-feedback">Location should be valid!</div>
       </div>
-      <div class="mb-3">
-        <label for="category" class="form-label">Category</label>
-        <select name="listing[category]" class="form-select" required>
-          <option value="Trending" <%= listing.category === 'Trending' ? 'selected' : '' %>>Trending</option>
-          <option value="Rooms" <%= listing.category === 'Rooms' ? 'selected' : '' %>>Rooms</option>
-          <option value="Iconic Cities" <%= listing.category === 'Iconic Cities' ? 'selected' : '' %>>Iconic Cities</option>
-          <option value="Mountains" <%= listing.category === 'Mountains' ? 'selected' : '' %>>Mountains</option>
-          <option value="Castles" <%= listing.category === 'Castles' ? 'selected' : '' %>>Castles</option>
-          <option value="Amazing Pools" <%= listing.category === 'Amazing Pools' ? 'selected' : '' %>>Amazing Pools</option>
-          <option value="Camping" <%= listing.category === 'Camping' ? 'selected' : '' %>>Camping</option>
-          <option value="Farms" <%= listing.category === 'Farms' ? 'selected' : '' %>>Farms</option>
-          <option value="Arctic" <%= listing.category === 'Arctic' ? 'selected' : '' %>>Arctic</option>
-          <option value="Domes" <%= listing.category === 'Domes' ? 'selected' : '' %>>Domes</option>
-          <option value="Boats" <%= listing.category === 'Boats' ? 'selected' : '' %>>Boats</option>
-        </select>
-        <div class="invalid-feedback">Please select a category!</div>
-      </div>
-      <button class="btn btn-dark edit-btn mt-3">Edit</button>
 
+      <!-- Category -->
+      <div class="mb-4">
+        <label for="category" class="form-label-pro">Category <span style="color: var(--primary);">*</span></label>
+        <div class="dropdown">
+          <input type="hidden" name="listing[category]" id="form-category-input" value="<%= listing.category %>" required>
+          <button class="form-control-pro-select-btn dropdown-toggle" type="button" id="formCategoryDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <span id="form-category-label"><%= listing.category %></span>
+            <i class="fa-solid fa-chevron-down" style="font-size: 0.8rem; color: var(--primary);"></i>
+          </button>
+          <ul class="dropdown-menu custom-select-dropdown w-100 mt-1" aria-labelledby="formCategoryDropdown">
+            <li><a class="dropdown-item <%= listing.category === 'Trending' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Trending', '🔥 Trending', this, event)"><i class="fa-solid fa-fire me-2" style="color:#B26335;"></i>Trending</a></li>
+            <li><a class="dropdown-item <%= listing.category === 'Rooms' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Rooms', '🛏️ Rooms', this, event)"><i class="fa-solid fa-bed me-2" style="color:#7A3A14;"></i>Rooms</a></li>
+            <li><a class="dropdown-item <%= listing.category === 'Iconic Cities' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Iconic Cities', '🏙️ Iconic Cities', this, event)"><i class="fa-solid fa-mountain-city me-2" style="color:#3B3A1E;"></i>Iconic Cities</a></li>
+            <li><a class="dropdown-item <%= listing.category === 'Mountains' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Mountains', '⛰️ Mountains', this, event)"><i class="fa-solid fa-mountain me-2" style="color:#4F4E28;"></i>Mountains</a></li>
+            <li><a class="dropdown-item <%= listing.category === 'Castles' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Castles', '🏰 Castles', this, event)"><i class="fa-solid fa-chess-rook me-2" style="color:#5D2C0C;"></i>Castles</a></li>
+            <li><a class="dropdown-item <%= listing.category === 'Amazing Pools' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Amazing Pools', '🏊 Amazing Pools', this, event)"><i class="fa-solid fa-person-swimming me-2" style="color:#2E6E65;"></i>Amazing Pools</a></li>
+            <li><a class="dropdown-item <%= listing.category === 'Camping' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Camping', '⛺ Camping', this, event)"><i class="fa-solid fa-campground me-2" style="color:#3B5C2A;"></i>Camping</a></li>
+            <li><a class="dropdown-item <%= listing.category === 'Farms' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Farms', '🌱 Farms', this, event)"><i class="fa-solid fa-seedling me-2" style="color:#6B5220;"></i>Farms</a></li>
+            <li><a class="dropdown-item <%= listing.category === 'Arctic' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Arctic', '❄️ Arctic', this, event)"><i class="fa-solid fa-snowflake me-2" style="color:#3A5E7A;"></i>Arctic</a></li>
+            <li><a class="dropdown-item <%= listing.category === 'Domes' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Domes', '🏠 Domes', this, event)"><i class="fa-solid fa-igloo me-2" style="color:#5E3E2C;"></i>Domes</a></li>
+            <li><a class="dropdown-item <%= listing.category === 'Boats' ? 'active' : '' %>" href="#" onclick="selectFormCategory('Boats', '⛵ Boats', this, event)"><i class="fa-solid fa-sailboat me-2" style="color:#2A4E78;"></i>Boats</a></li>
+          </ul>
+        </div>
+      </div>
+
+<script>
+function selectFormCategory(val, label, el, e) {
+  e.preventDefault();
+  document.getElementById('form-category-input').value = val;
+  const labelEl = document.getElementById('form-category-label');
+  labelEl.textContent = label;
+  document.querySelectorAll('#formCategoryDropdown + .dropdown-menu .dropdown-item').forEach(item => item.classList.remove('active'));
+  el.classList.add('active');
+  const dropdownBtn = document.getElementById('formCategoryDropdown');
+  if (window.bootstrap && bootstrap.Dropdown) {
+    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownBtn) || new bootstrap.Dropdown(dropdownBtn);
+    if (bsDropdown) bsDropdown.hide();
+  }
+}
+</script>
+
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button type="submit" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.85rem 2rem; background: var(--dark); color: white; border: none; border-radius: var(--radius-pill); font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.22s; box-shadow: var(--shadow-md);"
+          onmouseover="this.style.background='var(--primary)';"
+          onmouseout="this.style.background='var(--dark)';">
+          <i class="fa-solid fa-floppy-disk me-1"></i> Save Changes
+        </button>
+        <a href="/listings/<%= listing._id %>" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.85rem 1.75rem; border: 1.5px solid var(--border-dark); border-radius: var(--radius-pill); font-size: 0.95rem; font-weight: 700; color: var(--text-muted); text-decoration: none; transition: all 0.22s;"
+          onmouseover="this.style.borderColor='var(--dark)'; this.style.color='var(--dark)';"
+          onmouseout="this.style.borderColor='var(--border-dark)'; this.style.color='var(--text-muted)';">
+          Cancel
+        </a>
+      </div>
     </form>
   </div>
 </div>
-
-

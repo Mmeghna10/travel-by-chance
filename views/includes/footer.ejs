@@ -1,64 +1,77 @@
-<footer>
-  <div class="footer-main container-fluid">
-    <!-- Brand Column -->
-    <div>
-      <div class="footer-brand-logo">
-        <div class="footer-brand-icon"><i class="fa-solid fa-mountain-sun"></i></div>
-        <span class="footer-brand-name">TravelByChance</span>
+<footer class="footer-pro">
+  <div class="container">
+    <div class="row g-5">
+
+      <!-- Brand Column -->
+      <div class="col-12 col-md-4">
+        <div style="display:flex;align-items:center;gap:0.65rem;margin-bottom:1rem;">
+          <div style="width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 3px 10px rgba(178,99,53,0.4);">
+            <i class="fa-solid fa-mountain-sun"></i>
+          </div>
+          <span class="footer-brand-title" style="margin-bottom:0;">Travel<span>By</span>Chance</span>
+        </div>
+        <p class="footer-desc-text">
+          Discover unique stays across India and beyond. Every journey starts with a chance encounter — and the right host.
+        </p>
+        <div style="display:flex;gap:0.75rem;">
+          <% [['fa-instagram','Instagram'],['fa-x-twitter','Twitter'],['fa-linkedin-in','LinkedIn']].forEach(([icon, label]) => { %>
+          <a href="#" aria-label="<%= label %>" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(227,222,202,0.18);display:flex;align-items:center;justify-content:center;color:rgba(227,222,202,0.45);transition:all 0.24s;text-decoration:none;"
+            onmouseover="this.style.borderColor='var(--amber)';this.style.color='var(--amber)';"
+            onmouseout="this.style.borderColor='rgba(227,222,202,0.18)';this.style.color='rgba(227,222,202,0.45)';">
+            <i class="fa-brands <%= icon %>" style="font-size:0.88rem;"></i>
+          </a>
+          <% }); %>
+        </div>
       </div>
-      <p class="footer-tagline">Discover unique stays across India and beyond. Every journey starts with a chance encounter.</p>
-      <div class="footer-social">
-        <a href="#" class="footer-social-btn" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-        <a href="#" class="footer-social-btn" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-        <a href="#" class="footer-social-btn" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
-        <a href="#" class="footer-social-btn" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+
+      <!-- Explore -->
+      <div class="col-6 col-md-2">
+        <h6 class="footer-column-heading">Explore</h6>
+        <ul class="footer-link-list">
+          <li><a href="/listings">All Stays</a></li>
+          <li><a href="/listings?category=Trending">Trending</a></li>
+          <li><a href="/listings?category=Mountains">Mountains</a></li>
+          <li><a href="/listings?category=Camping">Camping</a></li>
+          <li><a href="/listings?category=Amazing Pools">Pool Villas</a></li>
+          <li><a href="/listings?category=Castles">Castles</a></li>
+        </ul>
       </div>
+
+      <!-- Popular in India -->
+      <div class="col-6 col-md-3">
+        <h6 class="footer-column-heading">Popular in India</h6>
+        <ul class="footer-link-list">
+          <li><a href="/listings?q=Mumbai">Mumbai</a></li>
+          <li><a href="/listings?q=Goa">Goa</a></li>
+          <li><a href="/listings?q=Manali">Manali</a></li>
+          <li><a href="/listings?q=Jaipur">Jaipur</a></li>
+          <li><a href="/listings?q=Kerala">Kerala</a></li>
+          <li><a href="/listings?q=Delhi">Delhi</a></li>
+        </ul>
+      </div>
+
+      <!-- Company -->
+      <div class="col-6 col-md-3">
+        <h6 class="footer-column-heading">Company</h6>
+        <ul class="footer-link-list">
+          <li><a href="/listings/new">List Your Property</a></li>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Press</a></li>
+        </ul>
+      </div>
+
     </div>
 
-    <!-- Explore -->
-    <div>
-      <div class="footer-col-title">Explore</div>
-      <ul class="footer-links">
-        <li><a href="/listings">All Stays</a></li>
-        <li><a href="/listings?category=Trending">Trending</a></li>
-        <li><a href="/listings?category=Mountains">Mountains</a></li>
-        <li><a href="/listings?category=Camping">Camping</a></li>
-        <li><a href="/listings?category=Amazing Pools">Pool Villas</a></li>
-      </ul>
-    </div>
-
-    <!-- India -->
-    <div>
-      <div class="footer-col-title">Popular in India</div>
-      <ul class="footer-links">
-        <li><a href="/listings?q=Mumbai">Mumbai</a></li>
-        <li><a href="/listings?q=Delhi">Delhi</a></li>
-        <li><a href="/listings?q=Goa">Goa</a></li>
-        <li><a href="/listings?q=Jaipur">Jaipur</a></li>
-        <li><a href="/listings?q=Manali">Manali</a></li>
-        <li><a href="/listings?q=Kerala">Kerala</a></li>
-      </ul>
-    </div>
-
-    <!-- Company -->
-    <div>
-      <div class="footer-col-title">Company</div>
-      <ul class="footer-links">
-        <li><a href="/listings/new">List Your Property</a></li>
-        <li><a href="#">About Us</a></li>
-        <li><a href="#">Help Center</a></li>
-        <li><a href="#">Careers</a></li>
-        <li><a href="#">Press</a></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="footer-bottom container-fluid">
-    <span>&copy; 2025 TravelByChance Pvt. Ltd. All rights reserved.</span>
-    <div class="d-flex gap-3">
-      <a href="#">Privacy Policy</a>
-      <a href="#">Terms of Service</a>
-      <a href="#">Cookie Settings</a>
+    <!-- Footer Bottom Bar -->
+    <div class="footer-bottom-bar">
+      <span>&copy; 2025 TravelByChance Pvt. Ltd. All rights reserved.</span>
+      <div style="display:flex;gap:2rem;">
+        <a href="#" style="color:rgba(227,222,202,0.4);font-size:0.85rem;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--cream)';" onmouseout="this.style.color='rgba(227,222,202,0.4)';">Privacy Policy</a>
+        <a href="#" style="color:rgba(227,222,202,0.4);font-size:0.85rem;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--cream)';" onmouseout="this.style.color='rgba(227,222,202,0.4)';">Terms of Service</a>
+        <a href="#" style="color:rgba(227,222,202,0.4);font-size:0.85rem;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--cream)';" onmouseout="this.style.color='rgba(227,222,202,0.4)';">Cookie Settings</a>
+      </div>
     </div>
   </div>
 </footer>

@@ -1,17 +1,15 @@
 <% if(success && success.length) { %>
-<div
-  class="alert alert-success alert-dismissible fade show" role="alert"
->
-  <%= success %>
-  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div style="display: flex; align-items: center; gap: 0.75rem; background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; border-left: 4px solid #22C55E; border-radius: var(--radius-sm); padding: 0.9rem 1.1rem; margin-bottom: 1rem; font-size: 0.9rem; font-weight: 600;" role="alert">
+  <i class="fa-solid fa-circle-check" style="flex-shrink: 0; font-size: 1rem;"></i>
+  <span><%= success %></span>
+  <button type="button" onclick="this.parentElement.remove()" style="margin-left: auto; background: none; border: none; cursor: pointer; color: #166534; font-size: 1rem; line-height: 1; opacity: 0.7; padding: 0;" aria-label="Close">&times;</button>
 </div>
 <% } %>
 
 <% if(error && error.length) { %>
-<div
-  class="alert alert-danger alert-dismissible fade show" role="alert"
->
-  <%= error %>
-  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div style="display: flex; align-items: center; gap: 0.75rem; background: #FFF1F2; color: #9F1239; border: 1px solid var(--primary-border); border-left: 4px solid var(--primary); border-radius: var(--radius-sm); padding: 0.9rem 1.1rem; margin-bottom: 1rem; font-size: 0.9rem; font-weight: 600;" role="alert">
+  <i class="fa-solid fa-circle-exclamation" style="flex-shrink: 0; font-size: 1rem;"></i>
+  <span><%= error %></span>
+  <button type="button" onclick="this.parentElement.remove()" style="margin-left: auto; background: none; border: none; cursor: pointer; color: #9F1239; font-size: 1rem; line-height: 1; opacity: 0.7; padding: 0;" aria-label="Close">&times;</button>
 </div>
 <% } %>
