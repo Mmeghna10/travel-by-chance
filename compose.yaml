@@ -13,10 +13,12 @@ name: travelbychance
 
 services:
   mongo:
-    # Not 8.0.x: MongoDB 8.0 refuses to start on Linux kernel 6.19+
-    # (SERVER-121912), which some GitHub runners and newer hosts run. 8.2.6 (the
-    # version the tests use) and later start fine there.
-    image: mongo:8.3.13-noble
+    # MongoDB 7.0, not 8.x: MongoDB 8.0+ refuses to start on Linux kernel 6.19+
+    # (SERVER-121912, a tcmalloc/rseq incompatibility). GitHub's runners already
+    # use such kernels (seen: 7.0.0-azure), and 8.0.34 and 8.3.13 both exit
+    # there. 7.0 has everything this app needs (replica sets, transactions).
+    # Revisit once MongoDB ships 8.x builds that support these kernels.
+    image: mongo:7.0.45-jammy
     # Transactions (used for every booking) need a replica set, even one with
     # a single member. A plain standalone mongod would reject them.
     command: ["--replSet", "rs0", "--bind_ip_all"]
