@@ -104,6 +104,8 @@ jobs:
 
       - name: Start the Compose stack
         run: |
+          # Runner kernels vary; MongoDB's kernel compatibility depends on it.
+          echo "::notice title=Runner kernel::$(uname -r)"
           # Throwaway values for CI only; real secrets never live in the repo.
           printf 'SECRET=%s\nMAP_TOKEN=pk.eyJ1IjoiY2kifQ.ci\n' "$(openssl rand -hex 32)" > .env
           docker compose up -d --build --wait --wait-timeout 180

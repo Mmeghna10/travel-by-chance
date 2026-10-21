@@ -43,7 +43,7 @@ flowchart LR
 
 ### Compose (`compose.yaml`)
 
-- **mongo**: `mongo:8.0.34-noble`, started with `--replSet rs0`. **Transactions need a replica set**, even a single-node one; that's what every booking uses. Its health check also runs `rs.initiate(...)` the first time, so "healthy" means "accepting connections **and** replica set ready". Published only on `127.0.0.1:27017`, for MongoDB Compass (`mongodb://localhost:27017/?directConnection=true`).
+- **mongo**: `mongo:8.3.13-noble` (originally 8.0.34, see §9: MongoDB 8.0 refuses to start on Linux kernel 6.19+), started with `--replSet rs0`. **Transactions need a replica set**, even a single-node one; that's what every booking uses. Its health check also runs `rs.initiate(...)` the first time, so "healthy" means "accepting connections **and** replica set ready". Published only on `127.0.0.1:27017`, for MongoDB Compass (`mongodb://localhost:27017/?directConnection=true`).
 - **app**: built from the `prod` target. Starts only after mongo is healthy (`depends_on: condition: service_healthy`, which handles dependency readiness). `init: true` adds tini as PID 1 to forward signals and reap zombie processes. `stop_grace_period: 15s` covers server.js's 10-second drain.
 - **worker**: same image target, `command: node worker.js`. Web containers run with `RUN_BACKGROUND_JOBS=false`, so the jobs run in one place. Running them in several places would also be safe (Milestones 3–4), just wasteful.
 - **Secrets** come from your `.env` **at runtime** (`env_file`). `.dockerignore` excludes `.env`, so they can never end up in an image layer. `SECRET` uses `${SECRET:?…}`, so a missing secret stops `docker compose up` with a clear message instead of a crash loop.

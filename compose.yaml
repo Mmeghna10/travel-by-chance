@@ -13,7 +13,10 @@ name: travelbychance
 
 services:
   mongo:
-    image: mongo:8.0.34-noble
+    # Not 8.0.x: MongoDB 8.0 refuses to start on Linux kernel 6.19+
+    # (SERVER-121912), which some GitHub runners and newer hosts run. 8.2.6 (the
+    # version the tests use) and later start fine there.
+    image: mongo:8.3.13-noble
     # Transactions (used for every booking) need a replica set, even one with
     # a single member. A plain standalone mongod would reject them.
     command: ["--replSet", "rs0", "--bind_ip_all"]
