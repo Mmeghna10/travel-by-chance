@@ -24,15 +24,17 @@ services:
       # mongodb://localhost:27017/?directConnection=true. Not exposed to your network.
       - "127.0.0.1:27017:27017"
     healthcheck:
-      # Also initialises the replica set on first start (idempotent): "healthy"
-      # means "accepting connections AND replica set ready", which is exactly
-      # what the app needs before it starts.
+      # Initialises the replica set on first start (idempotent) and reports
+      # healthy ONLY once this node is PRIMARY (myState 1), so dependent services
+      # can write (build indexes) the moment they start. mongosh exits 0 even if
+      # the script just returns a value, so the checks quit(1) explicitly: an
+      # earlier version reported healthy before any primary was elected.
       test:
         - CMD
         - mongosh
         - --quiet
         - --eval
-        - "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }).ok }"
+        - "try { if (rs.status().myState !== 1) quit(1) } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }); quit(1) }"
       interval: 5s
       timeout: 10s
       retries: 20
