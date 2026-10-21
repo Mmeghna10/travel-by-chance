@@ -45,6 +45,13 @@ CMD ["npx", "nodemon", "--legacy-watch", "server.js"]
 # ---- tests --------------------------------------------------------------------
 FROM dev AS test
 ENV NODE_ENV=test
+# The mongod binary that mongodb-memory-server runs needs these shared
+# libraries (MongoDB's documented prerequisites for Linux tarball installs),
+# which the slim base image doesn't include. Without them the first CI run
+# failed here. Test image only; the prod image never runs mongod.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libcurl4 openssl liblzma5 \
+ && rm -rf /var/lib/apt/lists/*
 # mongodb-memory-server downloads a mongod binary on first use; do it at build
 # time so `docker run` of this image works offline and the layer is cached.
 RUN node -e "require('mongodb-memory-server').MongoMemoryServer.create().then((m) => m.stop())"

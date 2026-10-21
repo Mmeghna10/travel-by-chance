@@ -132,13 +132,15 @@ jobs:
           docker compose up -d --wait --wait-timeout 180
           node ci/smoke.js http://localhost:8080 --login
 
+      # Cleanup must not fail when an earlier step failed before .env existed
+      # (Compose refuses to parse compose.yaml without SECRET).
       - name: Logs on failure
         if: failure()
-        run: docker compose logs --no-color --tail 200
+        run: SECRET="${SECRET:-cleanup}" docker compose logs --no-color --tail 200 || true
 
       - name: Stop the stack
         if: always()
-        run: docker compose down -v
+        run: SECRET="${SECRET:-cleanup}" docker compose down -v || true
 
       - name: Scan image for critical vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
