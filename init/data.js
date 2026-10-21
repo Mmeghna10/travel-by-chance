@@ -286,4 +286,4 @@ const sampleListings = [
   },
 ];
 
-module.exports = initData = { data: sampleListings };
+module.exports = { data: sampleListings };

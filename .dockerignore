@@ -15,6 +15,8 @@ npm-debug.log*
 .claude
 docs
 scratch
+ci
+eslint.config.js
 *.md
 Dockerfile
 .dockerignore

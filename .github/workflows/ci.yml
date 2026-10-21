@@ -1,0 +1,207 @@
+# CI/CD for TravelByChance.
+#
+#   every push / PR:  lint + tests -> dependency audit -> Docker build, in-container
+#                     tests, Compose smoke test (incl. graceful shutdown + data
+#                     persistence) and image scan
+#   push to main:     + publish the image to GHCR -> deploy that exact digest
+#
+# A failing job stops everything after it, so nothing is published or
+# deployed unless all checks passed.
+#
+# Third-party actions are pinned to full commit SHAs (tags can be moved, as in
+# past supply-chain attacks); the comment shows the release.
+
+name: CI
+
+on:
+  push:
+    branches: ["main", "milestone-*"]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch cancels the older, still-running pipeline.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege by default; jobs that need more ask for it.
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  test:
+    name: Lint and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      # mongodb-memory-server downloads a ~100 MB mongod binary for the tests.
+      - name: Cache mongod binary
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongod-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # npm ci: installs exactly what package-lock.json says (reproducible)
+      # and fails if package.json and the lockfile disagree.
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Fails on critical advisories in production dependencies. Known high
+      # findings are tracked in docs/08-milestone-7-ci-cd.md (they are in
+      # dev-only tooling or not reachable with our inputs).
+      - run: npm audit --omit=dev --audit-level=critical
+      - name: Full report (informational)
+        if: always()
+        run: npm audit --omit=dev || true
+
+  docker:
+    name: Docker build, smoke test and scan
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build production image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: prod
+          tags: travelbychance:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image runs as non-root and contains no .env
+        run: |
+          user=$(docker image inspect travelbychance:ci --format '{{.Config.User}}')
+          echo "image user: $user"
+          test "$user" = "node"
+          docker run --rm --entrypoint sh travelbychance:ci -c 'test ! -e /app/.env && test ! -d /app/.git'
+
+      - name: Build test image and run the suite inside it
+        run: |
+          docker build --target test -t travelbychance:test .
+          docker run --rm travelbychance:test
+
+      - name: Start the Compose stack
+        run: |
+          # Throwaway values for CI only; real secrets never live in the repo.
+          printf 'SECRET=%s\nMAP_TOKEN=pk.eyJ1IjoiY2kifQ.ci\n' "$(openssl rand -hex 32)" > .env
+          docker compose up -d --build --wait --wait-timeout 180
+          docker compose ps
+
+      - name: Smoke test against the running containers
+        run: node ci/smoke.js http://localhost:8080
+
+      - name: Graceful shutdown on SIGTERM (app and worker)
+        run: |
+          docker compose stop app worker
+          docker compose logs app | tee app.log
+          docker compose logs worker | tee worker.log
+          grep -q "SIGTERM received, shutting down" app.log
+          grep -q "Shutdown complete" app.log
+          grep -q "SIGTERM received, stopping worker" worker.log
+          for svc in app worker; do
+            code=$(docker inspect --format '{{.State.ExitCode}}' "$(docker compose ps -a -q $svc)")
+            echo "$svc exit code: $code"
+            test "$code" = "0"
+          done
+
+      - name: Data survives down/up (named volume)
+        run: |
+          docker compose down
+          docker compose up -d --wait --wait-timeout 180
+          node ci/smoke.js http://localhost:8080 --login
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail 200
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v
+
+      - name: Scan image for critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: travelbychance:ci
+          severity: CRITICAL
+          ignore-unfixed: true # only fail on issues that have a fix available
+          exit-code: "1"
+
+  publish:
+    name: Publish image to GHCR
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test, audit, docker]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write # push to ghcr.io with the built-in GITHUB_TOKEN
+    outputs:
+      image: ${{ steps.name.outputs.image }}
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # GHCR image names must be lowercase; this repository's owner isn't.
+      - id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: prod
+          push: true
+          # Immutable per-commit tag (for rollbacks) plus a moving "main" tag.
+          tags: |
+            ${{ steps.name.outputs.image }}:sha-${{ github.sha }}
+            ${{ steps.name.outputs.image }}:main
+          cache-from: type=gha
+
+  deploy:
+    name: Deploy
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # Requires a "production" environment in the repo settings (where you can
+    # also require a manual approval) holding the RENDER_DEPLOY_HOOK_URL secret.
+    environment: production
+    steps:
+      - name: Trigger deploy of the exact image digest that passed CI
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          IMAGE: ${{ needs.publish.outputs.image }}@${{ needs.publish.outputs.digest }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::notice::RENDER_DEPLOY_HOOK_URL is not set; skipping deploy (image $IMAGE was published)."
+            exit 0
+          fi
+          encoded=$(node -e 'console.log(encodeURIComponent(process.argv[1]))' "$IMAGE")
+          # Deploying by digest, not tag: exactly the bytes that were tested.
+          curl --fail --silent --show-error --request POST "${HOOK}&imgURL=${encoded}" > /dev/null
+          echo "Deploy triggered for $IMAGE"

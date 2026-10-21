@@ -1,6 +1,5 @@
 
 const Listing = require("../models/listing");
-const Review = require("../models/review.js");
 const escapeRegex = require("../utils/escapeRegex.js");
 const Booking = require("../models/booking.js");
 const InventoryNight = require("../models/inventoryNight.js");
@@ -106,7 +105,7 @@ module.exports.createListing = async (req, res, next) => {
 
   newListing.geometry = await geocode(`${req.body.listing.location}, ${req.body.listing.country}`);
 
-  let savedListing = await newListing.save();
+  await newListing.save();
   req.flash("success", "🎉 New listing created successfully!");
   res.redirect("/listings");
 };

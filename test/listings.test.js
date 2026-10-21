@@ -100,7 +100,7 @@ test("query-operator injection via category is not interpreted", async () => {
 });
 
 test("malformed and unknown listing ids return 404, not 500", async () => {
-  const host = await createUser("host", "admin");
+  await createUser("host", "admin");
   const agent = await loginAgent(app, "host");
   const missing = new mongoose.Types.ObjectId();
 

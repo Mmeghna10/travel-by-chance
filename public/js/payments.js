@@ -13,7 +13,9 @@
     let data = {};
     try {
       data = await res.json();
-    } catch (e) {}
+    } catch (e) {
+      // Non-JSON error page (e.g. a proxy 502): keep data = {}.
+    }
     return { ok: res.ok, status: res.status, body: data };
   }
 
@@ -67,7 +69,9 @@
         } catch (e) {
           // Fine: the webhook / reconciliation will still confirm it.
         }
-        if (status === "PENDING_PAYMENT") status = await waitForBooking(bookingId);
+        // Capture can lag a moment behind checkout; give it a few seconds so
+        // My Bookings shows the final status. We go there either way.
+        if (status === "PENDING_PAYMENT") await waitForBooking(bookingId);
         window.location.href = "/bookings";
       },
       modal: {

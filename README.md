@@ -12,6 +12,7 @@ Built with Node.js, Express, EJS and MongoDB.
 - **Bookings without double booking**: pick dates to see live availability and a server-computed price (nightly rate × nights, plus a 5% cleaning fee and a 12% service fee, each on one night's rate, once per stay). Each listing has a number of bookable `units`; nights are reserved atomically inside a MongoDB transaction so a night can never be oversold, even under 100 simultaneous requests. Booking requests are idempotent (`Idempotency-Key`), so double clicks and retries never create duplicates. See [docs/03-milestone-2-booking-core.md](docs/03-milestone-2-booking-core.md).
 - **Booking lifecycle**: an explicit state machine (`PENDING_PAYMENT`, `CONFIRMED`, `EXPIRED`, `CANCELLED`, `REFUND_PENDING`, …) with guarded, audited transitions. Guests can cancel before check-in, which releases the dates. Unpaid holds expire automatically via a background worker. See [docs/04-milestone-3-lifecycle.md](docs/04-milestone-3-lifecycle.md).
 - **Observability**: structured JSON logs (pino) with a request ID on every line, Prometheus metrics at `/metrics` (latency per route, booking outcomes, inventory conflicts, payment/refund/webhook outcomes, MongoDB command latency and write conflicts), an error-reporting hook, and a load-test harness that checks booking correctness under load. See [docs/07-milestone-6-observability.md](docs/07-milestone-6-observability.md).
+- **CI/CD**: GitHub Actions runs lint and tests, a dependency audit, a Docker build with in-container tests, a Compose smoke test (including graceful shutdown and data persistence) and an image scan on every push; `main` publishes the image to GHCR and deploys that exact digest. See [docs/08-milestone-7-ci-cd.md](docs/08-milestone-7-ci-cd.md) for the pipeline and the deployment plan.
 - **Payments (Razorpay, test mode)**: dates are held while the guest pays through Razorpay Checkout. Bookings are confirmed only after server-side signature verification plus a captured status fetched from Razorpay, or a signed webhook. Duplicate and out-of-order webhooks are handled, refunds are queued through a transactional outbox, and a reconciliation job catches payments nobody reported. See [docs/05-milestone-4-payments.md](docs/05-milestone-4-payments.md).
 - **Reviews**: logged-in users can leave a 1–5 star review; only the author can delete their own.
 - **Authentication**: sign up, log in and log out with Passport (local strategy). Sessions are stored in MongoDB.
@@ -198,6 +199,7 @@ Prices are displayed in Indian rupees (₹).
 | ------- | ----------- |
 | `npm start` | Run the server |
 | `npm run dev` | Run with nodemon |
+| `npm run lint` | ESLint (must pass in CI) |
 | `npm test` | Run the automated tests (downloads a MongoDB binary on first run) |
 | `npm run seed` | Reset and seed sample listings |
 | `npm run create-admin` | Create, promote or list admin accounts |

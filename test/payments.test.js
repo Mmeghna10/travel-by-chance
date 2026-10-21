@@ -22,7 +22,6 @@ const later = (minutes) => new Date(Date.now() + minutes * 60 * 1000);
 let app;
 let rzp;
 let host;
-let guest;
 let agent;
 let listing;
 
@@ -36,7 +35,7 @@ beforeEach(async () => {
   rzp = new FakeRazorpay({ keySecret: KEY_SECRET, webhookSecret: WEBHOOK_SECRET });
   configurePayments({ keyId: "rzp_test_fake", keySecret: KEY_SECRET, webhookSecret: WEBHOOK_SECRET, gateway: rzp });
   host = await h.createUser("host", "admin");
-  guest = await h.createUser("guest");
+  await h.createUser("guest");
   listing = await h.createListing(host, { price: 1000, units: 1 });
   agent = await h.loginAgent(app, "guest");
 });

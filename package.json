@@ -14,7 +14,8 @@
     "create-admin": "node init/create-admin.js",
     "migrate:bookings": "node init/migrate-bookings.js",
     "worker": "node worker.js",
-    "load:baseline": "node load/baseline.js"
+    "load:baseline": "node load/baseline.js",
+    "lint": "eslint ."
   },
   "author": "",
   "license": "ISC",
@@ -46,6 +47,9 @@
     "razorpay": "^2.9.8"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
     "mongodb-memory-server": "^11.3.0",
     "nodemon": "^3.1.14",
     "pino-pretty": "^13.2.0",
