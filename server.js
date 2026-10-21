@@ -24,7 +24,7 @@ async function start() {
 
   const app = createApp({
     sessionSecret: config.sessionSecret,
-    isProduction: config.isProduction,
+    httpsOnly: config.httpsOnly,
     trustProxy: config.trustProxy,
     bookings: config.bookings,
   });

@@ -56,6 +56,28 @@ test("session cookie is HttpOnly and SameSite=Lax", async () => {
   assert.match(cookie, /SameSite=Lax/i);
 });
 
+test("HTTPS-only mode: Secure cookie, only issued over HTTPS (or behind a trusted TLS proxy)", async () => {
+  await createUser("dora");
+  const login = (app, headers = {}) =>
+    request(app).post("/login").set(headers).type("form").send({ username: "dora", password: PASSWORD });
+  const sessionCookie = (res) => (res.headers["set-cookie"] || []).find((c) => c.startsWith("tbc.sid="));
+
+  // Plain HTTP (e.g. http://localhost in Docker) with httpsOnly off: cookie set, not Secure.
+  const plain = sessionCookie(await login(buildApp()));
+  assert.ok(plain);
+  assert.doesNotMatch(plain, /Secure/);
+
+  // httpsOnly on but the request is plain HTTP: express-session refuses to set
+  // a Secure cookie, so login would silently fail. This is why HTTPS_ONLY is
+  // a separate setting from NODE_ENV (see compose.yaml).
+  assert.equal(sessionCookie(await login(buildApp({}, {}, { httpsOnly: true }))), undefined);
+
+  // Behind a TLS-terminating proxy (TRUST_PROXY=1, X-Forwarded-Proto: https): Secure cookie issued.
+  const proxied = buildApp({}, {}, { httpsOnly: true, trustProxy: 1 });
+  const secure = sessionCookie(await login(proxied, { "X-Forwarded-Proto": "https" }));
+  assert.match(secure, /Secure/);
+});
+
 test("login is rate limited per IP", async () => {
   const limitedApp = buildApp({ authMax: 3 });
   const attempt = () => request(limitedApp).post("/login").type("form").send({ username: "x", password: "wrong-password" });

@@ -34,12 +34,12 @@ const { paymentsEnabled } = require("./modules/payments/gateway.js");
 /**
  * @param {object} options
  * @param {string} options.sessionSecret  secret for signing the session cookie
- * @param {boolean} [options.isProduction]
+ * @param {boolean} [options.httpsOnly]   site is served over HTTPS: Secure cookies + upgrade-insecure-requests
  * @param {number}  [options.trustProxy]  number of proxies in front of the app
  * @param {object}  [options.rateLimit]   overrides, e.g. { authMax: 5 }
  * @param {object}  [options.bookings]    { requirePayment, holdMinutes }
  */
-function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLimit = {}, bookings = {} }) {
+function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit = {}, bookings = {} }) {
   const app = express();
 
   if (trustProxy) app.set("trust proxy", trustProxy);
@@ -91,7 +91,7 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
           objectSrc: ["'none'"],
           frameAncestors: ["'none'"],
           formAction: ["'self'"],
-          upgradeInsecureRequests: isProduction ? [] : null,
+          upgradeInsecureRequests: httpsOnly ? [] : null,
         },
       },
     }),
@@ -127,7 +127,9 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
         maxAge: 7 * 24 * 60 * 60 * 1000,
         httpOnly: true,
         sameSite: "lax",
-        secure: isProduction,
+        // Secure cookies are only sent back over HTTPS. Behind a TLS-terminating
+        // proxy this also needs TRUST_PROXY so req.secure is true.
+        secure: httpsOnly,
       },
     }),
   );

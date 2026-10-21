@@ -1,0 +1,24 @@
+# Keep the build context small and secrets out of images.
+# Secrets are passed at runtime (env_file / environment), never baked in.
+.env
+.env.*
+!.env.example
+
+# Installed inside the image from package-lock.json instead
+node_modules
+npm-debug.log*
+
+# Not needed at runtime
+.git
+.gitignore
+.github
+.claude
+docs
+scratch
+*.md
+Dockerfile
+.dockerignore
+compose*.yaml
+load
+coverage
+.DS_Store

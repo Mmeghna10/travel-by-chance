@@ -15,6 +15,11 @@ if (process.env.DNS_SERVERS) {
 const config = {
   env: process.env.NODE_ENV || "development",
   isProduction: process.env.NODE_ENV === "production",
+  // Whether users reach the site over HTTPS. Separate from NODE_ENV so the
+  // production image can run over plain http://localhost in Docker (where
+  // Secure cookies would never be set and login would silently fail).
+  httpsOnly:
+    process.env.HTTPS_ONLY !== undefined ? process.env.HTTPS_ONLY === "true" : process.env.NODE_ENV === "production",
   port: Number(process.env.PORT) || 8080,
   dbUrl: process.env.ATLASDB_URL,
   sessionSecret: process.env.SECRET,

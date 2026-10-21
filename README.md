@@ -89,6 +89,7 @@ cp .env.example .env
 | `MAP_TOKEN`        | Mapbox public access token |
 | `PORT`             | Optional. Defaults to `8080` |
 | `DNS_SERVERS`      | Optional. Comma-separated resolvers (e.g. `8.8.8.8,8.8.4.4`) if your network can't resolve Atlas SRV records |
+| `HTTPS_ONLY`       | Optional. `true` = Secure cookies (needs HTTPS). Defaults to `true` when `NODE_ENV=production`; set `false` for plain `http://` |
 | `TRUST_PROXY`      | Optional. Number of reverse proxies in front of the app (set `1` behind nginx/Render/Railway) |
 | `ADMIN_PASSWORD`   | Only read by `npm run create-admin` |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Razorpay **test** API keys. Without them payments are off and bookings confirm instantly |
@@ -110,6 +111,16 @@ npm start       # production
 ```
 
 Open http://localhost:8080.
+
+### 3b. Or run everything with Docker
+
+With Docker Desktop installed, this starts MongoDB (as a replica set), the app and the background worker. Secrets are read from your `.env` at runtime; containers always use the bundled MongoDB, not `ATLASDB_URL`:
+
+```bash
+docker compose up --build -d
+```
+
+Then open http://localhost:8080. Stop with `docker compose down` (data is kept in a volume). Live-reload dev mode, all commands and troubleshooting are in [docs/06-milestone-5-docker.md](docs/06-milestone-5-docker.md).
 
 ### 4. (Optional) Seed sample listings
 
@@ -201,6 +212,7 @@ The `scratch/` folder holds older throwaway scripts for manual checks; the autom
 - The Content-Security-Policy still allows inline scripts because the views use inline `<script>` blocks and `onclick` attributes.
 - Without Razorpay keys, bookings are confirmed immediately (no payment). Changing a booking's dates isn't supported; cancel and rebook instead.
 - Refunds are always full refunds; there's no partial-refund policy and no admin screen for `REFUND_FAILED` bookings yet.
+- **Docker setup not yet run in Docker:** the Dockerfile and Compose files are schema-validated and the production image was rehearsed without Docker, but the stack hasn't been built or run under Docker yet. See [docs/06-milestone-5-docker.md](docs/06-milestone-5-docker.md).
 - **Live Razorpay sandbox check pending:** payments are tested against a Razorpay simulator (real HMAC signatures) and Checkout was verified to load in the browser, but no real test-mode payment, webhook or refund has been run yet (test keys were blocked by KYC onboarding). See [docs/05-milestone-4-payments.md](docs/05-milestone-4-payments.md#-pending-live-razorpay-sandbox-check).
 
 ## License

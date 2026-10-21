@@ -36,9 +36,10 @@ async function resetDb() {
   await Promise.all(collections.map((c) => c.deleteMany({})));
 }
 
-function buildApp(rateLimit = {}, bookings = {}) {
+function buildApp(rateLimit = {}, bookings = {}, options = {}) {
   // High defaults so only the rate-limit tests ever hit a limit.
   const app = createApp({
+    ...options,
     sessionSecret: "test-secret",
     rateLimit: { authMax: 1000, bookingMax: 1000, ...rateLimit },
     bookings,
