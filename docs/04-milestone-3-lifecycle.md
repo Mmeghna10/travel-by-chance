@@ -119,7 +119,7 @@ Without the jitter, cancel won the cancel-vs-payment race **every time (15/15, t
 
 **Browser smoke test** (real server, throwaway DB, `REQUIRE_PAYMENT=true`, 12-second hold, worker every 3 s): booking through the page returned `PENDING_PAYMENT` and the dates showed as unavailable. My Bookings showed "pending payment", the hold note, and a Cancel button. I waited 18 s without touching anything: the **in-process worker** expired it (server log: `[expiry] expired 1 unpaid hold(s)`), the status became `EXPIRED`, the dates were available again, and the Cancel button disappeared. On a second hold, posting the cancel form redirected to My Bookings with "Booking cancelled.", the status was `CANCELLED` and the dates were free.
 
-**Not verified:** graceful shutdown of the worker on SIGTERM/SIGINT. On Windows, killing a child process terminates it without running signal handlers. I confirmed `worker.js` starts and stays running; shutdown will be verified with `docker stop` in Milestone 5.
+**Worker graceful shutdown:** couldn't be tested on Windows (killing a child process there skips signal handlers). ✅ **Verified later in CI** (Milestone 7, [run 39595562847](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39595562847)): `docker compose stop worker` logged `SIGTERM received, stopping worker` and the container exited with code 0.
 
 ## 8. Limitations / next
 - Changing a booking's dates isn't supported (cancel and rebook). Doing it safely means "release old nights + reserve new nights + update booking" in one transaction, the same pattern as above.

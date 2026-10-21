@@ -221,7 +221,7 @@ The `scratch/` folder holds older throwaway scripts for manual checks; the autom
 - The Content-Security-Policy still allows inline scripts because the views use inline `<script>` blocks and `onclick` attributes.
 - Without Razorpay keys, bookings are confirmed immediately (no payment). Changing a booking's dates isn't supported; cancel and rebook instead.
 - Refunds are always full refunds; there's no partial-refund policy and no admin screen for `REFUND_FAILED` bookings yet.
-- **Docker setup not yet run in Docker:** the Dockerfile and Compose files are schema-validated and the production image was rehearsed without Docker, but the stack hasn't been built or run under Docker yet. See [docs/06-milestone-5-docker.md](docs/06-milestone-5-docker.md).
+- **Docker** is verified in CI on Linux (build, healthy stack, smoke test, graceful shutdown, persistence, image scan), but dev mode (`compose.dev.yaml`) hasn't been run. See [docs/06-milestone-5-docker.md](docs/06-milestone-5-docker.md).
 - **Live Razorpay sandbox check pending:** payments are tested against a Razorpay simulator (real HMAC signatures) and Checkout was verified to load in the browser, but no real test-mode payment, webhook or refund has been run yet (test keys were blocked by KYC onboarding). See [docs/05-milestone-4-payments.md](docs/05-milestone-4-payments.md#-pending-live-razorpay-sandbox-check).
 
 ## License

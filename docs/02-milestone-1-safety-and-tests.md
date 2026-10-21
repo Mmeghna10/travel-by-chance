@@ -74,7 +74,7 @@ Actual result (2026-10-21, Windows, Node 22.23.2): **22 tests, 22 passed, 0 fail
 
 **Manual smoke test** in a browser against a throwaway local DB: landing, listings, listing page (Bootstrap, fonts, icons and the Mapbox map all render with no CSP violations in the console), signup, login, `/healthz`, `/readyz`, `?q=(` all OK. The seeded XSS review comment displayed as plain text and `window.pwned` stayed unset.
 
-**Not verified:** graceful shutdown on SIGTERM. Windows can't send SIGTERM to a process the way Linux/Docker does; this gets verified with `docker stop` in the Docker milestone.
+**Graceful shutdown on SIGTERM:** couldn't be tested on Windows. ✅ **Verified later in CI** (Milestone 7, [run 39595562847](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39595562847)): `docker compose stop app` logged `SIGTERM received, shutting down` → `Shutdown complete` and the container exited with code 0.
 
 ## Files
 - **New:** `server.js`, `config/env.js`, `routes/health.js`, `middleware/rateLimits.js`, `utils/safeJson.js`, `utils/escapeRegex.js`, `init/create-admin.js`, `test/**`.

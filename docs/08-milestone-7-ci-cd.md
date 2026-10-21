@@ -2,7 +2,7 @@
 
 Goal: every change is linted, tested, built into the production image, started, smoke-tested and scanned automatically. Nothing reaches production unless all of that passed, and what gets deployed is the exact image that was tested.
 
-> **⏳ Status:** the pipeline is written and validated locally (schema, shell snippets, smoke script). **It has not run on GitHub yet**: that needs a push to `github.com/Mmeghna10/travel-by-chance`. The deploy target (Render + Atlas) has **not** been set up, so the deploy step is wired up but has never executed.
+> **✅ Status:** the pipeline runs on GitHub and is **green** on branch `milestone-7-ci-cd` ([run 39595562847](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39595562847)). *Publish* and *Deploy* only run on `main`, so they haven't executed yet. The deploy target (Render + Atlas) hasn't been set up.
 
 ## 1. Pipeline (`.github/workflows/ci.yml`)
 
@@ -33,7 +33,7 @@ flowchart LR
 | **Publish** | push to `main` only, after all of the above | image pushed to `ghcr.io/mmeghna10/travel-by-chance:sha-<commit>` (immutable) and `:main` |
 | **Deploy** | after publish | calls the Render deploy hook with the **image digest** (`imgURL=…@sha256:…`), so exactly the tested bytes go live; skipped with a notice if the hook secret isn't configured |
 
-The Docker job is also where the **open items from Milestones 1, 3 and 5 get closed**: graceful shutdown on SIGTERM (impossible to test on Windows) and the first real Docker run. They're closed once the pipeline has run on GitHub.
+The Docker job is also where the **open items from Milestones 1, 3 and 5 get closed**: graceful shutdown on SIGTERM (impossible to test on Windows) and the first real Docker run. Both are now closed: see §4.
 
 ### Design decisions
 - **Gates:** `needs:` chains the jobs, so a failed test means no image is published, and no publish means no deploy.
@@ -150,10 +150,21 @@ Milestone 6 measured that the **database** saturates first, so scale Atlas (and 
 | `npm test` | 114 / 114 |
 | `compose.yaml` still valid (worker health check changed in Milestone 6) | valid |
 
-## 4. ⏳ Not yet verified
-- **The pipeline itself on GitHub Actions**, including the Docker job, which also covers the pending Docker and graceful-shutdown checks. This needs a push.
-- **Deploy**: no Render service, Atlas production cluster or deploy hook exists yet. The step skips with a notice until `RENDER_DEPLOY_HOOK_URL` is set.
-- The Trivy and GHCR steps can only be confirmed on GitHub.
+## 4. Results on GitHub Actions
+
+Branch `milestone-7-ci-cd` was pushed to GitHub (not `main`). It took three runs to go green:
+
+| Run | Commit | Result | What happened |
+|---|---|---|---|
+| 39594296937 | `27050e4` | ❌ Docker job | Test image couldn't start `mongod`: missing `libcurl4` / `openssl` / `liblzma5` in `bookworm-slim`. Cleanup steps also failed because Compose needs `SECRET` |
+| 39594886331 | `ceb2a7d` | ❌ Docker job | Tests now passed inside the container; *Start the Compose stack* failed after 12 s. Found the mongo health check passing before a primary existed |
+| [39595562847](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39595562847) | `be7e130` | ✅ all jobs | Lint and test 78 s · Dependency audit 8 s · Docker job 178 s (every step green) · Publish/Deploy skipped (not `main`) |
+
+Diagnosing without logs: GitHub only shows Actions logs to signed-in users and the API needs admin rights. I inferred the first cause from MongoDB's documented dependencies and confirmed it when that step went green. For the second, I found a real bug in the health check, and CI now **publishes container status and logs as a check annotation** on failure, which the public API can read.
+
+## 5. ⏳ Not yet verified
+- **Publish to GHCR and Deploy**: they only run on `main`. Publishing will run on the first merge to `main`; deploying additionally needs the Render service and the `RENDER_DEPLOY_HOOK_URL` secret (§2).
+- **No production environment exists yet** (Render, Atlas production cluster).
 
 ## Files
 - **New:** `.github/workflows/ci.yml`, `ci/smoke.js`, `eslint.config.js`, `docs/08-milestone-7-ci-cd.md`.

@@ -2,7 +2,7 @@
 
 Goal: one command starts the whole system (database, web app, background worker) the same way on any machine, without baking secrets into images and with graceful shutdown and health checks.
 
-> **⏳ Status: written and validated without Docker; not yet run in Docker.** Docker Desktop and WSL 2 aren't installed on the development machine, and installing them needs admin rights and a reboot. What *was* verified is listed in §8. The Docker-only checks are listed in §9, ready to run once Docker Desktop is installed.
+> **✅ Status: verified in Docker on GitHub Actions** (Linux runner, [run 39595562847](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39595562847)); see §9. Docker isn't installed on the development laptop, so local-only parts (dev mode with live reload, MongoDB Compass access) are still untested.
 
 ## 1. Concepts in one table
 
@@ -134,14 +134,25 @@ Compose here is a **single-machine** tool: no TLS, no automatic restarts across 
 | Production mode over plain HTTP | signup set a session cookie and `/bookings` returned 200 (logged in); `/readyz` 200; CSP without `upgrade-insecure-requests` |
 | Full test suite | **104 / 104 passed** (incl. the new HTTPS-only cookie test) |
 
-## 9. ⏳ Still to verify once Docker Desktop is installed
+## 9. Verified in Docker (CI, Milestone 7)
 
-1. `docker compose up --build -d` builds both stages; `docker compose ps` shows mongo **healthy**, app **healthy**, worker **running**.
-2. `docker image inspect` shows user `node`; `docker history` shows no `.env`.
-3. Sign up, book a stay, cancel it, all at http://localhost:8080.
-4. `docker compose stop app` logs a graceful shutdown (`SIGTERM received` → `Shutdown complete`) within 15 s. The same for `worker`. **This also closes the open item from Milestones 1 and 3.**
-5. `docker compose down` then `up -d`: the booking is still there (volume persistence).
-6. `docker build --target test` and `docker run --rm travelbychance:test`: the suite passes inside the container.
+The CI Docker job ([run 39595562847](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39595562847), ubuntu-24.04) runs these checks on every push:
+
+| Check | Result |
+|---|---|
+| `compose up --build --wait`: mongo, app and worker all **healthy** | ✅ (27 s) |
+| Image runs as user `node`; no `.env` or `.git` inside | ✅ |
+| Test image: the full suite passes **inside** the container | ✅ |
+| Smoke test against the containers: health, readiness, security headers, signup, session over HTTP, no session for anonymous visitors, `/metrics` | ✅ |
+| `docker compose stop app worker`: graceful shutdown logged and **exit code 0** for both (closes the Milestone 1 and 3 items) | ✅ |
+| `down` then `up`: the user created before the restart can still log in (named volume) | ✅ |
+| Trivy: no fixable CRITICAL vulnerabilities in the image | ✅ |
+
+The first two CI runs failed and exposed two real problems, both fixed:
+1. **The test image couldn't start `mongod`.** `bookworm-slim` lacks the shared libraries MongoDB's Linux binaries need (`libcurl4`, `openssl`, `liblzma5`, per MongoDB's install docs). They're now installed in the `test` stage only.
+2. **The mongo health check reported healthy before a primary existed.** `mongosh --eval` exits 0 when the script just returns a value, so the same check that *initiated* the replica set also passed. It now exits non-zero until `rs.status().myState === 1` (PRIMARY), which is what "healthy" was supposed to mean.
+
+**Not covered by CI:** booking and cancelling through the UI inside Docker (the smoke test stops at login), and dev mode (`compose.dev.yaml`).
 
 ## Files
 - **New:** `Dockerfile`, `.dockerignore`, `compose.yaml`, `compose.dev.yaml`, `docs/06-milestone-5-docker.md`.
