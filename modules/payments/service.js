@@ -12,6 +12,8 @@ const ExpressError = require("../../utils/ExpressError.js");
 const { confirmPayment } = require("../bookings/lifecycle.js");
 const { getGateway, getSettings } = require("./gateway.js");
 const { verifyCheckoutSignature } = require("./signatures.js");
+const { logger } = require("../observability/logger.js");
+const { paymentOutcomes } = require("../observability/metrics.js");
 
 const RANK = { CREATING: 0, CREATED: 1, FAILED: 1, AUTHORIZED: 2, CAPTURED: 3 };
 const ranksBelow = (status) => Object.keys(RANK).filter((s) => RANK[s] < RANK[status]);
@@ -23,7 +25,7 @@ const notFound = () => new ExpressError(404, "Booking not found.", "BOOKING_NOT_
 // not Razorpay's own status code. Details go to the log, not the browser.
 function gatewayError(err) {
   const detail = (err.error && err.error.description) || err.message;
-  console.error(`[payments] Razorpay call failed (${err.statusCode || "no status"}): ${detail}`);
+  logger.error({ providerStatus: err.statusCode, detail }, "Razorpay call failed");
   return new ExpressError(502, "The payment provider is unavailable. Please try again.", "PAYMENT_PROVIDER_ERROR");
 }
 
@@ -120,7 +122,17 @@ async function createPaymentOrder({ bookingId, user, now = new Date() }) {
  * records. Checks it really belongs to this order with the expected amount
  * and currency before acting. Returns a short outcome string.
  */
-async function applyGatewayPayment(payment, entity, { now = new Date() } = {}) {
+async function applyGatewayPayment(payment, entity, { now = new Date(), source = "unknown" } = {}) {
+  const outcome = await applyGatewayPaymentInner(payment, entity, { now });
+  paymentOutcomes.inc({ source, outcome });
+  logger.info(
+    { bookingId: String(payment.booking), orderId: payment.orderId, paymentId: entity.id, status: entity.status, source, outcome },
+    "payment applied",
+  );
+  return outcome;
+}
+
+async function applyGatewayPaymentInner(payment, entity, { now }) {
   const mismatch =
     entity.order_id !== payment.orderId
       ? "order_id"
@@ -134,7 +146,7 @@ async function applyGatewayPayment(payment, entity, { now = new Date() } = {}) {
       { _id: payment._id },
       { $push: { anomalies: { at: now, paymentId: entity.id, reason: `${mismatch} mismatch (status ${entity.status})` } } },
     );
-    console.error(`[payments] ignored payment ${entity.id}: ${mismatch} mismatch for order ${payment.orderId}`);
+    logger.error({ orderId: payment.orderId, paymentId: entity.id, mismatch }, "ignored payment: mismatch");
     return "IGNORED_MISMATCH";
   }
 
@@ -156,7 +168,7 @@ async function applyGatewayPayment(payment, entity, { now = new Date() } = {}) {
             { _id: payment._id },
             { $push: { anomalies: { at: now, paymentId: entity.id, reason: "second captured payment on order" } } },
           );
-          console.error(`[payments] second captured payment ${entity.id} on order ${payment.orderId}`);
+          logger.error({ orderId: payment.orderId, paymentId: entity.id }, "second captured payment on order");
           return "DUPLICATE_CAPTURE";
         }
       }
@@ -207,14 +219,14 @@ async function verifyCheckout({ user, orderId, paymentId, signature }) {
     keySecret: getSettings().keySecret,
   });
   if (!valid) {
-    console.warn(`[payments] invalid checkout signature for order ${payment.orderId}`);
+    logger.warn({ orderId: payment.orderId }, "invalid checkout signature");
     throw new ExpressError(400, "Payment verification failed.", "SIGNATURE_INVALID");
   }
 
   const entity = await getGateway().fetchPayment(paymentId).catch((err) => {
     throw gatewayError(err);
   });
-  const outcome = await applyGatewayPayment(payment, entity);
+  const outcome = await applyGatewayPayment(payment, entity, { source: "verify" });
   const booking = await Booking.findById(payment.booking);
   return { outcome, bookingId: String(booking._id), bookingStatus: booking.status };
 }

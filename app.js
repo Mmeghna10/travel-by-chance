@@ -11,6 +11,11 @@ const MongoStore = require("connect-mongo");
 const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
+const crypto = require("crypto");
+const pinoHttp = require("pino-http");
+const { logger, requestContext } = require("./modules/observability/logger.js");
+const { registry, httpMetrics, routeBase } = require("./modules/observability/metrics.js");
+const { reportError } = require("./modules/observability/errors.js");
 
 const ExpressError = require("./utils/ExpressError.js");
 const wrapAsync = require("./utils/wrapAsync.js");
@@ -38,8 +43,9 @@ const { paymentsEnabled } = require("./modules/payments/gateway.js");
  * @param {number}  [options.trustProxy]  number of proxies in front of the app
  * @param {object}  [options.rateLimit]   overrides, e.g. { authMax: 5 }
  * @param {object}  [options.bookings]    { requirePayment, holdMinutes }
+ * @param {string}  [options.metricsToken] if set, GET /metrics requires "Authorization: Bearer <token>"
  */
-function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit = {}, bookings = {} }) {
+function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit = {}, bookings = {}, metricsToken }) {
   const app = express();
 
   if (trustProxy) app.set("trust proxy", trustProxy);
@@ -51,7 +57,42 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   app.locals.mapToken = process.env.MAP_TOKEN;
   app.set("bookingOptions", bookings);
 
-  // Liveness/readiness first: no session, no DB writes, cheap for probes.
+  // Observability first, so every request (even ones rejected early) gets a
+  // request ID, an access-log line and a latency measurement.
+  app.use(requestContext);
+  app.use(
+    pinoHttp({
+      logger,
+      genReqId: (req) => req.id,
+      // Probes and scrapes would be most of the log volume and tell us nothing.
+      autoLogging: { ignore: (req) => ["/healthz", "/readyz", "/metrics"].includes(req.url) },
+      customLogLevel: (req, res, err) => (err || res.statusCode >= 500 ? "error" : res.statusCode >= 400 ? "warn" : "info"),
+      // Deliberately minimal: no headers (cookies, auth) and no bodies (passwords, payment data).
+      serializers: {
+        req: (req) => ({ id: req.id, method: req.method, url: req.raw ? req.raw.originalUrl : req.url }),
+        res: (res) => ({ statusCode: res.statusCode }),
+      },
+      customProps: (req) => (req.user ? { userId: String(req.user._id) } : {}),
+      // originalUrl: inside a router req.url is relative to its mount point ("/").
+      customSuccessMessage: (req, res) => `${req.method} ${req.originalUrl} ${res.statusCode}`,
+      customErrorMessage: (req, res) => `${req.method} ${req.originalUrl} ${res.statusCode}`,
+    }),
+  );
+  app.use(httpMetrics);
+
+  // Prometheus scrape endpoint. Protect it with METRICS_TOKEN anywhere public:
+  // metrics reveal traffic, error rates and internals.
+  app.get("/metrics", async (req, res) => {
+    if (metricsToken) {
+      const expected = Buffer.from(`Bearer ${metricsToken}`);
+      const given = Buffer.from(req.get("authorization") || "");
+      if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) return res.status(401).end();
+    }
+    res.set("Content-Type", registry.contentType);
+    res.end(await registry.metrics());
+  });
+
+  // Liveness/readiness: no session, no DB writes, cheap for probes.
   app.use(healthRouter);
 
   // Razorpay webhooks need the RAW body bytes to check the HMAC signature, so
@@ -109,7 +150,7 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
     touchAfter: 24 * 3600,
   });
   store.on("error", (err) => {
-    console.error("Session store error:", err);
+    reportError(err, { message: "session store error" });
   });
   // Exposed so shutdown code (and tests) can wait for the store's background
   // setup (TTL index creation) before closing the database connection.
@@ -142,8 +183,14 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   app.use(passport.session());
 
   app.use((req, res, next) => {
-    res.locals.success = req.flash("success");
-    res.locals.error = req.flash("error");
+    // Only touch flash when there's something to show. connect-flash's read
+    // writes `session.flash = {}` even when empty, which marked EVERY visitor's
+    // session as modified: a cookie plus a MongoDB session write on every
+    // anonymous page view (found by the Milestone 6 load test).
+    const hasFlash = Boolean(req.session.flash && Object.keys(req.session.flash).length);
+    res.locals.success = hasFlash ? req.flash("success") : [];
+    res.locals.error = hasFlash ? req.flash("error") : [];
+    if (hasFlash && Object.keys(req.session.flash).length === 0) delete req.session.flash;
     res.locals.currUser = req.user;
     res.locals.paymentsEnabled = paymentsEnabled();
     res.locals.searchQuery = req.query.q || "";
@@ -157,12 +204,13 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   app.use(["/login", "/signup"], createAuthLimiter(rateLimit.authMax));
   app.use("/api/v1/bookings", createBookingLimiter(rateLimit.bookingMax));
 
-  app.use("/listings", listingRouter);
-  app.use("/listings/:id/reviews", reviewRouter);
-  app.use("/bookings", bookingRouter);
-  app.use("/admin", adminRouter);
-  app.use("/api/v1", apiRouter);
-  app.use("/", userRouter);
+  // routeBase() records each mount path for the metrics route label.
+  app.use("/listings", routeBase("/listings"), listingRouter);
+  app.use("/listings/:id/reviews", routeBase("/listings/:id/reviews"), reviewRouter);
+  app.use("/bookings", routeBase("/bookings"), bookingRouter);
+  app.use("/admin", routeBase("/admin"), adminRouter);
+  app.use("/api/v1", routeBase("/api/v1"), apiRouter);
+  app.use("/", routeBase(""), userRouter);
 
   // Real-time autocomplete API
   app.get("/api/search-suggestions", wrapAsync(listingController.searchSuggestions));
@@ -204,7 +252,7 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
     // Unexpected errors: log everything, tell the client nothing internal.
     // Our own 5xx ExpressErrors (502/503) already carry a safe message.
     if (statusCode >= 500 && !(err instanceof ExpressError)) {
-      console.error(err);
+      reportError(err, { method: req.method, route: req.originalUrl.split("?")[0] });
       message = "Something went wrong!";
     }
 

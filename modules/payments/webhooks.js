@@ -11,12 +11,14 @@ const { getSettings } = require("./gateway.js");
 const { verifyWebhookSignature } = require("./signatures.js");
 const { applyGatewayPayment } = require("./service.js");
 const { applyGatewayRefund } = require("./refunds.js");
+const { logger } = require("../observability/logger.js");
+const { webhookDeliveries } = require("../observability/metrics.js");
 
 async function handlePaymentEntity(entity) {
   if (!entity || !entity.order_id) return "IGNORED";
   const payment = await Payment.findOne({ orderId: entity.order_id });
   if (!payment) return "UNKNOWN_ORDER"; // not ours (e.g. another app on the same account)
-  return applyGatewayPayment(payment, entity);
+  return applyGatewayPayment(payment, entity, { source: "webhook" });
 }
 
 async function handleRefundEntity(entity) {
@@ -57,7 +59,8 @@ async function handleWebhook({ rawBody, headers }) {
   if (!webhookSecret) throw new ExpressError(503, "Webhooks are not configured.", "WEBHOOK_NOT_CONFIGURED");
 
   if (!verifyWebhookSignature({ rawBody, signature: headers["x-razorpay-signature"], webhookSecret })) {
-    console.warn("[webhooks] rejected delivery with invalid signature");
+    webhookDeliveries.inc({ event: "unknown", result: "invalid_signature" });
+    logger.warn("rejected webhook delivery with invalid signature");
     throw new ExpressError(400, "Invalid signature.", "SIGNATURE_INVALID");
   }
 
@@ -73,15 +76,21 @@ async function handleWebhook({ rawBody, headers }) {
     if (err.code === 11000) return WebhookEvent.findOne({ eventId }); // concurrent first delivery
     throw err;
   });
-  if (record.status === "PROCESSED") return { status: "DUPLICATE" };
+  if (record.status === "PROCESSED") {
+    webhookDeliveries.inc({ event: event.event, result: "duplicate" });
+    return { status: "DUPLICATE" };
+  }
 
   try {
     const result = await dispatch(event);
     await WebhookEvent.updateOne({ eventId }, { $set: { status: "PROCESSED", processedAt: new Date() }, $unset: { lastError: "" } });
+    webhookDeliveries.inc({ event: event.event, result: "processed" });
+    logger.info({ eventId, event: event.event, result }, "webhook processed");
     return { status: "PROCESSED", result };
   } catch (err) {
     // Recorded and re-thrown: we answer 5xx so Razorpay retries later.
     await WebhookEvent.updateOne({ eventId }, { $set: { status: "FAILED", lastError: err.message } });
+    webhookDeliveries.inc({ event: event.event, result: "error" });
     throw err;
   }
 }

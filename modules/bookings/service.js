@@ -12,6 +12,8 @@ const ExpressError = require("../../utils/ExpressError.js");
 const { validateStay, formatDay } = require("./dates.js");
 const { quote } = require("./pricing.js");
 const { ensureNights, reserveNights, unitsLeft } = require("./inventory.js");
+const { logger } = require("../observability/logger.js");
+const { bookingAttempts, inventoryConflicts } = require("../observability/metrics.js");
 
 const SCOPE = "booking.create";
 const DEFAULT_HOLD_MINUTES = 15;
@@ -65,7 +67,7 @@ async function getQuote({ listingId, checkIn, checkOut, now }) {
  * nights for holdMinutes; otherwise it is CONFIRMED immediately.
  * Returns { statusCode, body, replayed }.
  */
-async function createBooking({
+async function createBookingInner({
   userId,
   listingId,
   checkIn,
@@ -166,6 +168,28 @@ async function createBooking({
   }
 
   return { statusCode: 201, body, replayed: false };
+}
+
+// Public entry point: createBookingInner plus metrics and a log line per outcome.
+async function createBooking(args) {
+  try {
+    const result = await createBookingInner(args);
+    bookingAttempts.inc({ outcome: result.replayed ? "replayed" : "created" });
+    if (!result.replayed) {
+      const b = result.body.booking;
+      logger.info(
+        { bookingId: b.id, listingId: b.listingId, status: b.status, nights: b.nights, amountPaise: b.amountPaise },
+        "booking created",
+      );
+    }
+    return result;
+  } catch (err) {
+    const outcome =
+      err.code === "SOLD_OUT" ? "sold_out" : err instanceof ExpressError && err.statusCode < 500 ? "invalid" : "error";
+    bookingAttempts.inc({ outcome });
+    if (outcome === "sold_out") inventoryConflicts.inc();
+    throw err;
+  }
 }
 
 module.exports = { createBooking, getQuote, ensureIndexes, SCOPE };

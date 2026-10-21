@@ -9,6 +9,14 @@ const Payment = require("../../models/payment.js");
 const Refund = require("../../models/refund.js");
 const { applyTransition } = require("../bookings/stateMachine.js");
 const { getGateway } = require("./gateway.js");
+const { logger } = require("../observability/logger.js");
+const { refundOutcomes } = require("../observability/metrics.js");
+
+function recordRefund(refund, outcome, extra = {}) {
+  refundOutcomes.inc({ outcome: outcome.toLowerCase() });
+  logger.info({ bookingId: String(refund.booking), outcome, ...extra }, "refund update");
+  return outcome;
+}
 
 const LEASE_MS = 2 * 60 * 1000;
 const MAX_ATTEMPTS = 6;
@@ -30,7 +38,7 @@ async function applyGatewayRefund(refund, entity, { now = new Date() } = {}) {
       { $set: { status: "PROCESSED", razorpayRefundId: entity.id, processedAt: now }, $unset: { lockedUntil: "" } },
     );
     await moveBooking(refund.booking, "REFUND_PENDING", "REFUNDED", "refund processed by Razorpay");
-    return "PROCESSED";
+    return recordRefund(refund, "PROCESSED", { refundId: entity.id });
   }
   if (entity.status === "failed") {
     await Refund.updateOne(
@@ -38,14 +46,14 @@ async function applyGatewayRefund(refund, entity, { now = new Date() } = {}) {
       { $set: { status: "FAILED", razorpayRefundId: entity.id, lastError: "Razorpay reported refund failure" }, $unset: { lockedUntil: "" } },
     );
     await moveBooking(refund.booking, "REFUND_PENDING", "REFUND_FAILED", "Razorpay reported refund failure");
-    return "FAILED";
+    return recordRefund(refund, "FAILED", { refundId: entity.id });
   }
   // "pending" (or anything not final): accepted, waiting for the outcome.
   await Refund.updateOne(
     { _id: refund._id, status: { $in: ["REQUESTED", "SUBMITTING"] } },
     { $set: { status: "PENDING", razorpayRefundId: entity.id }, $unset: { lockedUntil: "" } },
   );
-  return "PENDING";
+  return recordRefund(refund, "PENDING", { refundId: entity.id });
 }
 
 async function giveUp(refund, error) {
@@ -54,6 +62,9 @@ async function giveUp(refund, error) {
     { $set: { status: "FAILED", lastError: error }, $unset: { lockedUntil: "" } },
   );
   await moveBooking(refund.booking, "REFUND_PENDING", "REFUND_FAILED", error);
+  // Dead-lettered: a human has to look at this one.
+  logger.error({ bookingId: String(refund.booking), error }, "refund gave up");
+  return recordRefund(refund, "GAVE_UP");
 }
 
 /** Submits one refund. Safe if two workers run it at once (lease) or after a crash (receipt lookup). */
@@ -90,7 +101,7 @@ async function submitRefund(refund) {
         $unset: { lockedUntil: "" },
       },
     );
-    return "RETRY_SCHEDULED";
+    return recordRefund(refund, "RETRY_SCHEDULED", { error: message, attempts: refund.attempts });
   }
 }
 

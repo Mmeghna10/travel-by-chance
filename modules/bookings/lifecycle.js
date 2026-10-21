@@ -6,6 +6,7 @@ const Booking = require("../../models/booking.js");
 const ExpressError = require("../../utils/ExpressError.js");
 const { todayIn } = require("./dates.js");
 const { applyTransition, prepareReserve } = require("./stateMachine.js");
+const { reportError } = require("../observability/errors.js");
 
 const withTransaction = (fn) => mongoose.connection.transaction(fn);
 
@@ -155,7 +156,7 @@ async function expireStaleHolds({ now = new Date(), limit = 100 } = {}) {
     } catch (err) {
       // One bad booking must not stop the rest; it stays PENDING_PAYMENT and
       // is retried on the next run.
-      console.error(`Expiry failed for booking ${_id}:`, err.message);
+      reportError(err, { message: "expiry failed", bookingId: String(_id) });
       skipped++;
     }
   }

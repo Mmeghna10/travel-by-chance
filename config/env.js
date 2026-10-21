@@ -26,6 +26,13 @@ const config = {
   // Number of reverse proxies in front of the app (needed for correct client
   // IPs in rate limiting and for secure cookies behind HTTPS termination).
   trustProxy: Number(process.env.TRUST_PROXY) || 0,
+  metricsToken: process.env.METRICS_TOKEN || undefined,
+  // Per-IP login/signup attempts per 15 min, per-user booking attempts per minute.
+  // Raised only for load tests; keep the defaults in real deployments.
+  rateLimit: {
+    authMax: Number(process.env.RATE_LIMIT_AUTH_MAX) || undefined,
+    bookingMax: Number(process.env.RATE_LIMIT_BOOKING_MAX) || undefined,
+  },
   payments: {
     keyId: process.env.RAZORPAY_KEY_ID,
     keySecret: process.env.RAZORPAY_KEY_SECRET,

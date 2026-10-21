@@ -10,6 +10,7 @@ const { confirmPayment } = require("../bookings/lifecycle.js");
 const { getGateway } = require("./gateway.js");
 const { applyGatewayPayment } = require("./service.js");
 const { applyGatewayRefund } = require("./refunds.js");
+const { reportError } = require("../observability/errors.js");
 
 const QUIET_MS = 60 * 1000; // give the browser/webhook a minute first
 const RECHECK_MS = 2 * 60 * 1000; // per-payment polling interval
@@ -38,14 +39,14 @@ async function reconcilePayments({ now = new Date(), limit = 50 } = {}) {
       const rank = { captured: 0, refunded: 0, authorized: 1, failed: 2 };
       attempts.sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
       for (const entity of attempts) {
-        const outcome = await applyGatewayPayment(payment, entity, { now });
+        const outcome = await applyGatewayPayment(payment, entity, { now, source: "reconcile" });
         if (outcome.startsWith("CONFIRMED") || outcome === "REFUND_REQUIRED") summary.confirmed++;
         if (entity.status === "captured") break;
       }
       await Payment.updateOne({ _id: payment._id }, { $set: { lastReconciledAt: now } });
     } catch (err) {
       summary.errors++;
-      console.error(`[reconcile] order ${payment.orderId}:`, err.message);
+      reportError(err, { message: "reconcile order failed", orderId: payment.orderId });
     }
   }
 
@@ -67,7 +68,7 @@ async function reconcilePayments({ now = new Date(), limit = 50 } = {}) {
         summary.confirmed++;
       } catch (err) {
         summary.errors++;
-        console.error(`[reconcile] booking ${b._id}:`, err.message);
+        reportError(err, { message: "reconcile booking failed", bookingId: String(b._id) });
       }
     }
   }
@@ -84,7 +85,7 @@ async function reconcilePayments({ now = new Date(), limit = 50 } = {}) {
       await applyGatewayRefund(refund, await gateway.fetchRefund(refund.paymentId, refund.razorpayRefundId), { now });
     } catch (err) {
       summary.errors++;
-      console.error(`[reconcile] refund ${refund.razorpayRefundId}:`, err.message);
+      reportError(err, { message: "reconcile refund failed", refundId: refund.razorpayRefundId });
     }
   }
   return summary;

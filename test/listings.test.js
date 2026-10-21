@@ -44,6 +44,28 @@ test("the listing page does not expose host or reviewer emails", async () => {
   assert.ok(res.text.includes("@guest"), "usernames are still shown");
 });
 
+test("anonymous page views don't create sessions (no cookie, no session write)", async () => {
+  const mongoose = require("mongoose");
+  const sessions = () => mongoose.connection.db.collection("sessions").countDocuments();
+  const before = await sessions();
+  for (const url of ["/", "/listings", "/login", "/signup"]) {
+    const res = await request(app).get(url);
+    assert.equal(res.status, 200, url);
+    assert.equal(res.headers["set-cookie"], undefined, `${url} must not set a session cookie`);
+  }
+  assert.equal(await sessions(), before);
+});
+
+test("flash messages still work: shown once, then gone", async () => {
+  await createUser("flashy");
+  const agent = request.agent(app);
+  await agent.post("/login").type("form").send({ username: "flashy", password: "wrong-password-1" });
+  const first = await agent.get("/login");
+  assert.ok(first.text.includes("Password or username is incorrect"), "failure message shown");
+  const second = await agent.get("/login");
+  assert.ok(!second.text.includes("Password or username is incorrect"), "shown only once");
+});
+
 test("security headers are set", async () => {
   const res = await request(app).get("/listings");
   assert.match(res.headers["content-security-policy"], /object-src 'none'/);

@@ -87,9 +87,13 @@ services:
       ATLASDB_URL: mongodb://mongo:27017/travelbychance?replicaSet=rs0
       DNS_SERVERS: ""
       SECRET: ${SECRET:?Set SECRET in .env (any long random string)}
-    # No HTTP port, so the image's /healthz check doesn't apply.
+    # The worker serves /healthz and /metrics on port 9464 (internal only).
     healthcheck:
-      disable: true
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9464/healthz').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
     init: true
     stop_grace_period: 15s
     restart: unless-stopped

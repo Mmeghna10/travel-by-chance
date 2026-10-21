@@ -11,6 +11,7 @@ const { createApp } = require("../app.js");
 const User = require("../models/user.js");
 const Listing = require("../models/listing.js");
 const { ensureIndexes } = require("../modules/bookings/service.js");
+const { instrumentMongo } = require("../modules/observability/db.js");
 const { todayIn, formatDay, DAY_MS } = require("../modules/bookings/dates.js");
 
 const PASSWORD = "correct-horse-battery";
@@ -19,7 +20,9 @@ const apps = [];
 
 async function startDb() {
   replSet = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: "wiredTiger" } });
-  await mongoose.connect(replSet.getUri());
+  // monitorCommands + instrumentMongo: same database monitoring as production.
+  await mongoose.connect(replSet.getUri(), { monitorCommands: true });
+  instrumentMongo(mongoose.connection);
   await ensureIndexes();
 }
 

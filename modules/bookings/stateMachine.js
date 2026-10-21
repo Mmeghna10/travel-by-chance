@@ -14,6 +14,8 @@ const Refund = require("../../models/refund.js");
 const ExpressError = require("../../utils/ExpressError.js");
 const { nightsBetween } = require("./dates.js");
 const { ensureNights, reserveNights, releaseNights } = require("./inventory.js");
+const { logger } = require("../observability/logger.js");
+const { bookingTransitions } = require("../observability/metrics.js");
 
 // Who may cause each transition:
 //   guest   - the user who made the booking (cancel)
@@ -104,6 +106,10 @@ async function applyTransition({ booking, from, to, actor, session, set = {}, re
       await reserveNights(booking.listing, nights, listing.units, session);
     }
   }
+  // Counted when applied inside the transaction; an attempt that is rolled back
+  // and retried by the driver can therefore be counted more than once.
+  bookingTransitions.inc({ from, to, actor });
+  logger.info({ bookingId: String(booking._id), from, to, actor, reason }, "booking transition");
   return true;
 }
 

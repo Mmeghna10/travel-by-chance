@@ -15,6 +15,10 @@ const { expireStaleHolds } = require("../bookings/lifecycle.js");
 const { paymentsEnabled } = require("../payments/gateway.js");
 const { processRefundQueue } = require("../payments/refunds.js");
 const { reconcilePayments } = require("../payments/reconcile.js");
+const crypto = require("crypto");
+const { logger: defaultLogger, withContext } = require("../observability/logger.js");
+const { jobDuration } = require("../observability/metrics.js");
+const { reportError } = require("../observability/errors.js");
 
 function defaultJobs() {
   const jobs = [{ name: "expiry", run: expireStaleHolds }];
@@ -25,7 +29,7 @@ function defaultJobs() {
   return jobs;
 }
 
-function startBackgroundJobs({ intervalMs = 30_000, jobs = defaultJobs(), logger = console } = {}) {
+function startBackgroundJobs({ intervalMs = 30_000, jobs = defaultJobs(), logger = defaultLogger } = {}) {
   let timer = null;
   let running = null;
   let stopped = false;
@@ -33,17 +37,24 @@ function startBackgroundJobs({ intervalMs = 30_000, jobs = defaultJobs(), logger
   async function tick() {
     for (const job of jobs) {
       if (stopped) return;
-      try {
-        const result = await job.run();
-        if (job.name === "expiry" && result.expired > 0) logger.log(`[jobs] expired ${result.expired} unpaid hold(s)`);
-        if (job.name === "refunds" && result.length > 0) logger.log(`[jobs] refunds: ${result.join(", ")}`);
-        if (job.name === "reconcile" && (result.confirmed > 0 || result.errors > 0)) {
-          logger.log(`[jobs] reconcile: ${JSON.stringify(result)}`);
+      // Each pass gets its own correlation ID, so all log lines it causes
+      // (transitions, refunds, ...) can be grouped like a request's.
+      const end = jobDuration.startTimer({ job: job.name });
+      await withContext(`job-${job.name}-${crypto.randomUUID().slice(0, 8)}`, async () => {
+        try {
+          const result = await job.run();
+          end({ result: "ok" });
+          const busy =
+            (job.name === "expiry" && result.expired > 0) ||
+            (job.name === "refunds" && result.length > 0) ||
+            (job.name === "reconcile" && (result.confirmed > 0 || result.errors > 0));
+          if (busy) logger.info({ job: job.name, result }, `job ${job.name} did work`);
+        } catch (err) {
+          // One failing job must not stop the others.
+          end({ result: "error" });
+          reportError(err, { message: `job ${job.name} failed`, job: job.name });
         }
-      } catch (err) {
-        // One failing job must not stop the others.
-        logger.error(`[jobs] ${job.name} failed:`, err.message);
-      }
+      });
     }
   }
 
@@ -59,7 +70,7 @@ function startBackgroundJobs({ intervalMs = 30_000, jobs = defaultJobs(), logger
   }
 
   schedule();
-  logger.log(`[jobs] running ${jobs.map((j) => j.name).join(", ")} every ${intervalMs / 1000}s`);
+  logger.info({ jobs: jobs.map((j) => j.name), intervalMs }, "background jobs started");
 
   return {
     // Resolves once an in-flight pass has finished, for graceful shutdown.
