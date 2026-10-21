@@ -33,6 +33,9 @@ router
 .put(
   isLoggedIn,
   isOwner,
+  // The edit form is multipart (it can include a new image), so multer must
+  // parse it before validation; without this req.body was empty.
+  upload.single('listing[image]'),
   validateListing,
   wrapAsync(listingController.updateListing),
 )

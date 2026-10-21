@@ -33,18 +33,23 @@ Built with Node.js, Express, EJS and MongoDB.
 
 ```
 travel-by-chance/
-├── app.js                  # App entry: DB, sessions, passport, routes, error handling
+├── server.js               # Process entry: config, DB connect, listen, graceful shutdown
+├── app.js                  # createApp(): middleware, security headers, sessions, routes, errors
+├── config/env.js           # Loads .env, optional DNS override, required-variable check
 ├── cloudConfig.js          # Cloudinary + Multer storage config
 ├── middleware.js           # isLoggedIn, isOwner, isAdmin, isReviewAuthor, Joi validators
-├── schema.js               # Joi schemas for listings and reviews
+├── middleware/rateLimits.js# Login/signup and booking rate limiters
+├── schema.js               # Joi schemas for listings, reviews and signup
 ├── controllers/            # admin, bookings, listings, review, user
 ├── models/                 # User, Listing, Review, Booking
 ├── routes/                 # listing, review, user, bookings, admin
 ├── views/                  # EJS templates (layouts, includes, listings, users, admin, landing)
 ├── public/                 # css/ and client-side js/ (map, form validation)
-├── init/                   # Seed data + seeding and migration scripts
+├── init/                   # Seed data, seeding/migration scripts, create-admin
+├── test/                   # Automated tests (node:test + supertest + in-memory MongoDB)
+├── docs/                   # Audit, architecture and milestone notes
 ├── scratch/                # Ad-hoc manual test/debug scripts
-└── utils/                  # ExpressError, wrapAsync
+└── utils/                  # ExpressError, wrapAsync, safeJson, escapeRegex
 ```
 
 ## Getting started
@@ -81,6 +86,11 @@ cp .env.example .env
 | `CLOUD_API_SECRET` | Cloudinary API secret |
 | `MAP_TOKEN`        | Mapbox public access token |
 | `PORT`             | Optional. Defaults to `8080` |
+| `DNS_SERVERS`      | Optional. Comma-separated resolvers (e.g. `8.8.8.8,8.8.4.4`) if your network can't resolve Atlas SRV records |
+| `TRUST_PROXY`      | Optional. Number of reverse proxies in front of the app (set `1` behind nginx/Render/Railway) |
+| `ADMIN_PASSWORD`   | Only read by `npm run create-admin` |
+
+The server refuses to start if `ATLASDB_URL` or `SECRET` is missing or the database is unreachable.
 
 When `NODE_ENV=production`, `.env` is not loaded, so set these variables in your hosting provider's dashboard instead.
 
@@ -99,14 +109,21 @@ Open http://localhost:8080.
 2. Run:
 
 ```bash
-node init/index.js
+npm run seed
 ```
 
 > **Warning:** the seed script **deletes all existing listings** before inserting the sample data. It also assigns placeholder map coordinates to every listing, so seeded stays share one pin location. Listings created through the app are geocoded from their location.
 
 ### 5. Create your first admin
 
-On the sign-up page, choose **Host / Admin** under "Register As". Admins land on `/admin` after logging in and can add listings from the navbar.
+Public sign-up always creates a **customer**. Admin (host) accounts are created from the command line:
+
+```powershell
+$env:ADMIN_PASSWORD = "choose-a-strong-password"
+npm run create-admin -- --username host1 --email host1@example.com
+```
+
+Promote an existing user with `npm run create-admin -- --promote <username>`, and list admins with `npm run create-admin -- --list`. Admins land on `/admin` after logging in and can add listings from the navbar.
 
 ## Routes
 
@@ -128,6 +145,8 @@ On the sign-up page, choose **Host / Admin** under "Register As". Admins land on
 | GET/POST | `/signup`, `/login` | Public | Register and log in |
 | GET | `/logout` | Logged in | Log out |
 | GET | `/api/search-suggestions?q=` | Public | JSON autocomplete (min. 2 characters, up to 8 results) |
+| GET | `/healthz` | Public | Liveness probe (process is up) |
+| GET | `/readyz` | Public | Readiness probe (database reachable), 503 otherwise |
 
 ## Data model
 
@@ -144,20 +163,22 @@ Prices are displayed in Indian rupees (₹).
 | ------- | ----------- |
 | `npm start` | Run the server |
 | `npm run dev` | Run with nodemon |
-| `node init/index.js` | Reset and seed sample listings |
+| `npm test` | Run the automated tests (downloads a MongoDB binary on first run) |
+| `npm run seed` | Reset and seed sample listings |
+| `npm run create-admin` | Create, promote or list admin accounts |
 | `node init/migrate_categories.js` | Assign a category to existing listings based on their title and description |
 
-The `scratch/` folder holds throwaway scripts for manual checks (database inspection, DNS resolution, role access, search suggestions). They are not an automated test suite, and `npm test` is not configured yet.
+The `scratch/` folder holds older throwaway scripts for manual checks; the automated suite lives in `test/`.
 
 ## Troubleshooting
 
-- **Cannot connect to MongoDB Atlas** (SRV/DNS errors): the app forces Google DNS (`8.8.8.8`, `8.8.4.4`) at startup to work around this. `scratch/test_dns.js` can help diagnose it. Also check that your IP is on the Atlas allow-list.
+- **Cannot connect to MongoDB Atlas** (SRV/DNS errors): set `DNS_SERVERS=8.8.8.8,8.8.4.4` in `.env`. `scratch/test_dns.js` can help diagnose it. Also check that your IP is on the Atlas allow-list.
 - **Map doesn't load**: confirm `MAP_TOKEN` is set to a valid Mapbox public token.
 - **Image upload fails**: confirm the three `CLOUD_*` values are correct. Only PNG and JPG are accepted.
 
 ## Known limitations
 
-- Anyone can pick the **Host / Admin** role at sign-up, so this is suitable for demos and learning but not production without adding an approval step.
+- The Content-Security-Policy still allows inline scripts because the views use inline `<script>` blocks and `onclick` attributes.
 - Bookings are confirmed immediately. There is no payment step and no check for overlapping dates on the same listing.
 
 ## License

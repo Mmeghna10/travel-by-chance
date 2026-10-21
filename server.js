@@ -1,0 +1,53 @@
+// Process entrypoint: load config, connect to MongoDB, start HTTP, shut down cleanly.
+const { config, assertRequired } = require("./config/env.js");
+const mongoose = require("mongoose");
+const { createApp } = require("./app.js");
+
+const SHUTDOWN_TIMEOUT_MS = 10_000;
+
+async function start() {
+  assertRequired();
+
+  // Fail fast: don't accept traffic we can't serve.
+  await mongoose.connect(config.dbUrl, { serverSelectionTimeoutMS: 10_000 });
+  console.log("connected to database");
+
+  const app = createApp({
+    sessionSecret: config.sessionSecret,
+    isProduction: config.isProduction,
+    trustProxy: config.trustProxy,
+  });
+
+  const server = app.listen(config.port, () => {
+    console.log(`Server running on port ${config.port}`);
+  });
+
+  let shuttingDown = false;
+  const shutdown = (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`${signal} received, shutting down`);
+
+    // Hard stop if in-flight requests don't finish in time.
+    setTimeout(() => {
+      console.error("Forced shutdown after timeout");
+      process.exit(1);
+    }, SHUTDOWN_TIMEOUT_MS).unref();
+
+    // Stop accepting new connections, let in-flight requests finish, then close the DB.
+    server.close(async () => {
+      await mongoose.disconnect();
+      console.log("Shutdown complete");
+      process.exit(0);
+    });
+    server.closeIdleConnections();
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+}
+
+start().catch((err) => {
+  console.error("Failed to start:", err.message);
+  process.exit(1);
+});

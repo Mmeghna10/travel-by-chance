@@ -4,7 +4,6 @@ const Listing = require("./models/listing")
 const Review = require("./models/review.js")
 
 module.exports.isLoggedIn = (req, res, next) => {
-    console.log(req.path, "..", req.originalUrl);
      if(!req.isAuthenticated()){
         if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1) || req.originalUrl.startsWith('/bookings')) {
           return res.status(401).json({ success: false, message: "You must be logged in to reserve stays!" });
@@ -26,11 +25,14 @@ next();
 module.exports.isOwner = async(req,res,next) => {
    let { id } = req.params;
    let listing = await Listing.findById(id);
-  if(!listing.owner._id.equals(res.locals.currUser._id)){
+  if (!listing) {
+    throw new ExpressError(404, "Listing not found");
+  }
+  if(!listing.owner || !listing.owner.equals(res.locals.currUser._id)){
     req.flash("error", "You're not the owner of this listing");
   return res.redirect(`/listings/${id}`);
   }
-  next();  
+  next();
 }
 
 module.exports.validateListing = (req, res, next) => {
@@ -56,11 +58,14 @@ module.exports.validateReview = (req, res, next) => {
 module.exports.isReviewAuthor = async(req,res,next) => {
    let { id , reviewId } = req.params;
    let review = await Review.findById(reviewId);
-  if(!review.author.equals(res.locals.currUser._id)){
-    req.flash("error", "You're not the author of this listing");
+  if (!review) {
+    throw new ExpressError(404, "Review not found");
+  }
+  if(!review.author || !review.author.equals(res.locals.currUser._id)){
+    req.flash("error", "You're not the author of this review");
   return res.redirect(`/listings/${id}`);
   }
-  next();  
+  next();
 }
 
 module.exports.isAdmin = (req, res, next) => {
