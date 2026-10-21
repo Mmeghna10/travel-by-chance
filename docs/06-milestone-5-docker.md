@@ -2,7 +2,7 @@
 
 Goal: one command starts the whole system (database, web app, background worker) the same way on any machine, without baking secrets into images and with graceful shutdown and health checks.
 
-> **✅ Status: verified in Docker on GitHub Actions** (Linux runner, [run 39595562847](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39595562847)); see §9. Docker isn't installed on the development laptop, so local-only parts (dev mode with live reload, MongoDB Compass access) are still untested.
+> **✅ Status: verified in Docker on GitHub Actions** (Linux runner with kernel 7.0, [run 39624260695](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39624260695)); see §9. Docker isn't installed on the development laptop, so local-only parts (dev mode with live reload, MongoDB Compass access) are still untested.
 
 ## 1. Concepts in one table
 
@@ -136,7 +136,7 @@ Compose here is a **single-machine** tool: no TLS, no automatic restarts across 
 
 ## 9. Verified in Docker (CI, Milestone 7)
 
-The CI Docker job ([run 39595562847](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39595562847), ubuntu-24.04) runs these checks on every push:
+The CI Docker job ([run 39624260695](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39624260695), ubuntu-24.04, kernel `7.0.0-1017-azure`) runs these checks on every push:
 
 | Check | Result |
 |---|---|
@@ -148,9 +148,12 @@ The CI Docker job ([run 39595562847](https://github.com/Mmeghna10/travel-by-chan
 | `down` then `up`: the user created before the restart can still log in (named volume) | ✅ |
 | Trivy: no fixable CRITICAL vulnerabilities in the image | ✅ |
 
-The first two CI runs failed and exposed two real problems, both fixed:
+Getting here exposed three real problems (full run history in [docs/08 §4](08-milestone-7-ci-cd.md#4-results-on-github-actions)):
 1. **The test image couldn't start `mongod`.** `bookworm-slim` lacks the shared libraries MongoDB's Linux binaries need (`libcurl4`, `openssl`, `liblzma5`, per MongoDB's install docs). They're now installed in the `test` stage only.
-2. **The mongo health check reported healthy before a primary existed.** `mongosh --eval` exits 0 when the script just returns a value, so the same check that *initiated* the replica set also passed. It now exits non-zero until `rs.status().myState === 1` (PRIMARY), which is what "healthy" was supposed to mean.
+2. **MongoDB 8.x refuses to start on Linux kernel 6.19+** ([SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912)): *"Linux kernel versions 6.19 and newer has a known incompatibility with this version of MongoDB."* GitHub's runners have mixed kernels, so the Compose step passed or failed **depending on which machine a run landed on**. `mongo:8.0.34` and `8.3.13` both exited on kernel `7.0.0-azure`. The image is now **`mongo:7.0.45-jammy`**, outside the affected range; the full test suite also passes against `mongod` 7.0.45 (114/114). CI records the runner's kernel in an annotation, and the green run above was on kernel 7.0, so it proves the fix.
+3. **The mongo health check reported healthy before a primary existed.** `mongosh --eval` exits 0 when the script just returns a value, so the check that *initiated* the replica set also passed. It now exits non-zero until `rs.status().myState === 1` (PRIMARY). This was a real bug, but **not** the cause of the CI failures; I first believed it was (see the history in docs/08).
+
+**Implication for hosting:** any machine on Linux 6.19+ (newer distros, some cloud kernels) can't run MongoDB 8.x containers today. MongoDB Atlas is unaffected, because MongoDB runs its own servers.
 
 **Not covered by CI:** booking and cancelling through the UI inside Docker (the smoke test stops at login), and dev mode (`compose.dev.yaml`).
 

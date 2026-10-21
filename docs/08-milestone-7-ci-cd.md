@@ -2,7 +2,7 @@
 
 Goal: every change is linted, tested, built into the production image, started, smoke-tested and scanned automatically. Nothing reaches production unless all of that passed, and what gets deployed is the exact image that was tested.
 
-> **✅ Status:** the pipeline runs on GitHub and is **green** on branch `milestone-7-ci-cd` ([run 39595562847](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39595562847)). *Publish* and *Deploy* only run on `main`, so they haven't executed yet. The deploy target (Render + Atlas) hasn't been set up.
+> **✅ Status:** the pipeline runs on GitHub and is **green** on branch `milestone-7-ci-cd` ([run 39624260695](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39624260695), on a runner with kernel 7.0). *Publish* and *Deploy* only run on `main`, so they haven't executed yet. The deploy target (Render + Atlas) hasn't been set up.
 
 ## 1. Pipeline (`.github/workflows/ci.yml`)
 
@@ -152,15 +152,22 @@ Milestone 6 measured that the **database** saturates first, so scale Atlas (and 
 
 ## 4. Results on GitHub Actions
 
-Branch `milestone-7-ci-cd` was pushed to GitHub (not `main`). It took three runs to go green:
+Branch `milestone-7-ci-cd` was pushed to GitHub (not `main`). Every run, including the wrong turns:
 
 | Run | Commit | Result | What happened |
 |---|---|---|---|
 | 39594296937 | `27050e4` | ❌ Docker job | Test image couldn't start `mongod`: missing `libcurl4` / `openssl` / `liblzma5` in `bookworm-slim`. Cleanup steps also failed because Compose needs `SECRET` |
-| 39594886331 | `ceb2a7d` | ❌ Docker job | Tests now passed inside the container; *Start the Compose stack* failed after 12 s. Found the mongo health check passing before a primary existed |
-| [39595562847](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39595562847) | `be7e130` | ✅ all jobs | Lint and test 78 s · Dependency audit 8 s · Docker job 178 s (every step green) · Publish/Deploy skipped (not `main`) |
+| 39594886331 | `ceb2a7d` | ❌ Docker job | Tests passed inside the container; *Start the Compose stack* failed after 12 s. I found and fixed a real health-check bug and **assumed** it was the cause |
+| 39595562847 | `be7e130` | ✅ all jobs | Green, which seemed to confirm the assumption. In hindsight it landed on an older-kernel runner |
+| 39596250735 | `f7a8d25` (docs only) | ❌ Docker job | Same 12 s failure. I'd said this run "should pass" without checking it |
+| 39598462731 | `c984390` (Milestone 8) | ❌ Docker job | Same failure. The new diagnostics annotation showed the real cause: `MongoDB cannot start: Linux kernel versions 6.19 and newer has a known incompatibility` (SERVER-121912) |
+| 39622452167 | `d09dad4` | ❌ Docker job | Tried `mongo:8.3.13` on the assumption that newer 8.x was fixed. **Wrong**: it refuses too. The kernel annotation showed `7.0.0-1017-azure` |
+| [39624260695](https://github.com/Mmeghna10/travel-by-chance/actions/runs/39624260695) | `1fe87aa` | ✅ all jobs | `mongo:7.0.45-jammy` on kernel `7.0.0-1017-azure`, the kernel that broke 8.x, so this run is proof. Docker job: build 17 s · tests in container 82 s · stack healthy 28 s · smoke 6 s · graceful shutdown · persistence 12 s · Trivy 11 s |
 
-Diagnosing without logs: GitHub only shows Actions logs to signed-in users and the API needs admin rights. I inferred the first cause from MongoDB's documented dependencies and confirmed it when that step went green. For the second, I found a real bug in the health check, and CI now **publishes container status and logs as a check annotation** on failure, which the public API can read.
+**Lessons:**
+- **Diagnosing without logs.** GitHub only shows Actions logs to signed-in users and the API needs admin rights. The first cause was inferred from MongoDB's documented dependencies and confirmed when that step went green. For the rest, CI now **publishes container status, recent logs and the runner kernel as check annotations**, which the public API can read. That's what found the real cause.
+- **One green run isn't proof when the failure is intermittent.** Run 39595562847 passed by luck (machine assignment). Proof came from a pass *on the kernel that had failed*, which is why CI now records the kernel.
+- **"Newer" isn't the same as "fixed".** MongoDB 8.3.13 contains the same deliberate refusal as 8.0.34.
 
 ## 5. ⏳ Not yet verified
 - **Publish to GHCR and Deploy**: they only run on `main`. Publishing will run on the first merge to `main`; deploying additionally needs the Render service and the `RENDER_DEPLOY_HOOK_URL` secret (§2).
