@@ -5,8 +5,8 @@ const Review = require("./models/review.js")
 
 module.exports.isLoggedIn = (req, res, next) => {
      if(!req.isAuthenticated()){
-        if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1) || req.originalUrl.startsWith('/bookings')) {
-          return res.status(401).json({ success: false, message: "You must be logged in to reserve stays!" });
+        if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1) || req.originalUrl.startsWith('/bookings') || req.originalUrl.startsWith('/api/')) {
+          return res.status(401).json({ success: false, code: "UNAUTHENTICATED", message: "You must be logged in to reserve stays!" });
         }
         req.session.redirectUrl = req.originalUrl;
         req.flash("error", "You must be logged in!");

@@ -136,8 +136,8 @@
                 <% } %>
               </td>
               <td style="padding:1rem 1.25rem;font-size:0.85rem;font-weight:600;color:var(--text-muted);">@<%= booking.user ? booking.user.username : 'Deleted User' %></td>
-              <td style="padding:1rem 1.25rem;font-size:0.85rem;font-weight:600;color:var(--text-main);"><%= booking.checkIn.toLocaleDateString("en-IN", {day:'numeric',month:'short',year:'numeric'}) %></td>
-              <td style="padding:1rem 1.25rem;font-size:0.85rem;font-weight:600;color:var(--text-main);"><%= booking.checkOut.toLocaleDateString("en-IN", {day:'numeric',month:'short',year:'numeric'}) %></td>
+              <td style="padding:1rem 1.25rem;font-size:0.85rem;font-weight:600;color:var(--text-main);"><%= booking.checkIn.toLocaleDateString("en-IN", {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}) %></td>
+              <td style="padding:1rem 1.25rem;font-size:0.85rem;font-weight:600;color:var(--text-main);"><%= booking.checkOut.toLocaleDateString("en-IN", {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}) %></td>
               <td style="padding:1rem 1.25rem;font-weight:800;color:var(--primary);font-size:0.9rem;">₹<%= booking.totalPrice.toLocaleString("en-IN") %></td>
               <td style="padding:1rem 1.25rem;">
                 <span style="display:inline-block;background:var(--success-light);color:var(--success);border:1px solid rgba(74,124,89,0.3);border-radius:var(--radius-pill);font-size:0.72rem;font-weight:800;padding:0.25rem 0.75rem;text-transform:uppercase;letter-spacing:0.05em;">● Active</span>

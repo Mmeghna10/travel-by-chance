@@ -2,6 +2,9 @@
 const Listing = require("../models/listing");
 const Review = require("../models/review.js");
 const escapeRegex = require("../utils/escapeRegex.js");
+const Booking = require("../models/booking.js");
+const InventoryNight = require("../models/inventoryNight.js");
+const { quote } = require("../modules/bookings/pricing.js");
 const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding');
 const mapToken = process.env.MAP_TOKEN;
 const geocodingClient = mbxGeocoding({ accessToken: mapToken });
@@ -82,7 +85,9 @@ module.exports.showListing = async (req, res) => {
   const ratings = listing.reviews.map(r => r.rating).filter(r => typeof r === 'number');
   listing.averageRating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : 0;
 
-  return res.render("listings/show.ejs", { listing });
+  // Server-computed 1-night price for the initial render; the page then asks
+  // the quote API whenever dates change, so it never computes prices itself.
+  return res.render("listings/show.ejs", { listing, oneNightQuote: quote(listing.price || 0, 1) });
 };
 
 
@@ -141,7 +146,19 @@ module.exports.updateListing = async (req, res) => {
 
 module.exports.destroyListing = async (req, res) => {
   let { id } = req.params;
+  // Deleting a listing would strand guests with upcoming stays. Bookings with
+  // no status are pre-Milestone-2 bookings and count as active.
+  const hasUpcomingStays = await Booking.exists({
+    listing: id,
+    status: { $nin: ["EXPIRED", "CANCELLED", "REFUNDED"] },
+    checkOut: { $gt: new Date() },
+  });
+  if (hasUpcomingStays) {
+    req.flash("error", "This listing has upcoming bookings and can't be deleted yet.");
+    return res.redirect(`/listings/${id}`);
+  }
   await Listing.findByIdAndDelete(id);
+  await InventoryNight.deleteMany({ listing: id });
   req.flash("success", "🗑️ Listing deleted.");
   res.redirect("/listings");
 };

@@ -11,7 +11,8 @@
     "dev": "nodemon server.js",
     "test": "node --test --test-concurrency=1 \"test/**/*.test.js\"",
     "seed": "node init/index.js",
-    "create-admin": "node init/create-admin.js"
+    "create-admin": "node init/create-admin.js",
+    "migrate:bookings": "node init/migrate-bookings.js"
   },
   "author": "",
   "license": "ISC",

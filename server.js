@@ -2,6 +2,7 @@
 const { config, assertRequired } = require("./config/env.js");
 const mongoose = require("mongoose");
 const { createApp } = require("./app.js");
+const { ensureIndexes } = require("./modules/bookings/service.js");
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -11,6 +12,8 @@ async function start() {
   // Fail fast: don't accept traffic we can't serve.
   await mongoose.connect(config.dbUrl, { serverSelectionTimeoutMS: 10_000 });
   console.log("connected to database");
+  // Booking correctness depends on unique indexes; build them before serving.
+  await ensureIndexes();
 
   const app = createApp({
     sessionSecret: config.sessionSecret,
@@ -36,6 +39,7 @@ async function start() {
 
     // Stop accepting new connections, let in-flight requests finish, then close the DB.
     server.close(async () => {
+      await Promise.allSettled([app.get("sessionStore").collectionP]);
       await mongoose.disconnect();
       console.log("Shutdown complete");
       process.exit(0);

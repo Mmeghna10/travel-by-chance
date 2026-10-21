@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const mongoose = require("mongoose");
 const Listing = require("../models/listing.js");
 const Review = require("../models/review.js");
-const { startDb, stopDb, resetDb, buildApp, createUser, loginAgent, createListing, request } = require("./helpers.js");
+const { startDb, stopDb, resetDb, buildApp, createUser, loginAgent, createListing, request, day, newKey } = require("./helpers.js");
 
 const XSS = "</script><script>window.pwned=1</script>";
 
@@ -93,9 +93,13 @@ test("malformed and unknown listing ids return 404, not 500", async () => {
 test("JSON clients get JSON errors", async () => {
   await createUser("guest");
   const agent = await loginAgent(app, "guest");
-  const res = await agent.post("/bookings").send({ listingId: "nope", checkIn: "2030-01-01", checkOut: "2030-01-03" });
+  const res = await agent
+    .post("/api/v1/bookings")
+    .set("Idempotency-Key", newKey())
+    .send({ listingId: "nope", checkIn: day(1), checkOut: day(3) });
   assert.equal(res.status, 404);
   assert.equal(res.body.success, false);
+  assert.equal(res.body.code, "LISTING_NOT_FOUND");
 });
 
 test("the owner can edit a listing via the multipart edit form", async () => {

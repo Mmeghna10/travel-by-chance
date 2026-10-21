@@ -38,12 +38,17 @@
 
       <!-- Price + Country Row -->
       <div class="row g-3 mb-4">
-        <div class="col-md-5">
+        <div class="col-md-4">
           <label for="price" class="form-label-pro">Price per Night (₹) <span style="color: var(--primary);">*</span></label>
           <input name="listing[price]" id="price" type="number" placeholder="e.g. 3500" class="form-control form-control-pro" required min="1" />
           <div class="invalid-feedback">Please enter a valid price.</div>
         </div>
-        <div class="col-md-7">
+        <div class="col-md-3">
+          <label for="units" class="form-label-pro">Bookable units</label>
+          <input name="listing[units]" id="units" value="1" type="number" class="form-control form-control-pro" required min="1" max="100" step="1" />
+          <div class="invalid-feedback">Between 1 and 100.</div>
+        </div>
+        <div class="col-md-5">
           <label for="country" class="form-label-pro">Country <span style="color: var(--primary);">*</span></label>
           <input name="listing[country]" id="country" placeholder="India" type="text" class="form-control form-control-pro" required />
           <div class="invalid-feedback">Please enter the country.</div>

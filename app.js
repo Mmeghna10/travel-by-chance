@@ -16,6 +16,7 @@ const ExpressError = require("./utils/ExpressError.js");
 const wrapAsync = require("./utils/wrapAsync.js");
 const safeJson = require("./utils/safeJson.js");
 const { createAuthLimiter, createBookingLimiter } = require("./middleware/rateLimits.js");
+const { formatPaise } = require("./modules/bookings/pricing.js");
 const User = require("./models/user.js");
 const Listing = require("./models/listing.js");
 
@@ -24,6 +25,7 @@ const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 const bookingRouter = require("./routes/bookings.js");
 const adminRouter = require("./routes/admin.js");
+const apiRouter = require("./routes/api.js");
 const healthRouter = require("./routes/health.js");
 const listingController = require("./controllers/listings.js");
 
@@ -42,6 +44,7 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
   app.set("views", path.join(__dirname, "views"));
   app.engine("ejs", ejsMate);
   app.locals.safeJson = safeJson;
+  app.locals.formatPaise = formatPaise;
   app.locals.mapToken = process.env.MAP_TOKEN;
 
   // Liveness/readiness first: no session, no DB writes, cheap for probes.
@@ -93,6 +96,9 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
   store.on("error", (err) => {
     console.error("Session store error:", err);
   });
+  // Exposed so shutdown code (and tests) can wait for the store's background
+  // setup (TTL index creation) before closing the database connection.
+  app.set("sessionStore", store);
 
   app.use(
     session({
@@ -131,12 +137,13 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
   // counters. The default store is in-memory, i.e. per process; with several
   // instances behind a load balancer this moves to a shared (Redis) store.
   app.use(["/login", "/signup"], createAuthLimiter(rateLimit.authMax));
-  app.use("/bookings", createBookingLimiter(rateLimit.bookingMax));
+  app.use("/api/v1/bookings", createBookingLimiter(rateLimit.bookingMax));
 
   app.use("/listings", listingRouter);
   app.use("/listings/:id/reviews", reviewRouter);
   app.use("/bookings", bookingRouter);
   app.use("/admin", adminRouter);
+  app.use("/api/v1", apiRouter);
   app.use("/", userRouter);
 
   // Real-time autocomplete API
@@ -180,7 +187,9 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
     const wantsJson =
       req.originalUrl.startsWith("/api/") || req.is("application/json") || req.accepts(["html", "json"]) === "json";
     if (wantsJson) {
-      return res.status(statusCode).json({ success: false, message });
+      const body = { success: false, message };
+      if (err instanceof ExpressError && err.code) body.code = err.code;
+      return res.status(statusCode).json(body);
     }
     res.status(statusCode).render("error.ejs", { message });
   });

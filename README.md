@@ -9,7 +9,7 @@ Built with Node.js, Express, EJS and MongoDB.
 - **Browse and search**: filter listings by category, free-text search across title, location, country and description, and real-time autocomplete suggestions.
 - **11 categories**: Trending, Rooms, Iconic Cities, Mountains, Castles, Amazing Pools, Camping, Farms, Arctic, Domes, Boats.
 - **Listing pages** with image, description, average star rating, reviews, and a Mapbox map pinned to the location.
-- **Bookings**: pick check-in and check-out dates and see a live price breakdown (nightly rate × nights, plus a 5% cleaning fee and a 12% service fee). Guests can view their bookings under **My Bookings**.
+- **Bookings without double booking**: pick dates to see live availability and a server-computed price (nightly rate × nights, plus a 5% cleaning fee and a 12% service fee, each on one night's rate, once per stay). Each listing has a number of bookable `units`; nights are reserved atomically inside a MongoDB transaction so a night can never be oversold, even under 100 simultaneous requests. Booking requests are idempotent (`Idempotency-Key`), so double clicks and retries never create duplicates. See [docs/03-milestone-2-booking-core.md](docs/03-milestone-2-booking-core.md).
 - **Reviews**: logged-in users can leave a 1–5 star review; only the author can delete their own.
 - **Authentication**: sign up, log in and log out with Passport (local strategy). Sessions are stored in MongoDB.
 - **Roles**: `customer` and `admin` (Host). Only admins can create listings; only a listing's owner can edit or delete it.
@@ -139,7 +139,8 @@ Promote an existing user with `npm run create-admin -- --promote <username>`, an
 | DELETE | `/listings/:id` | Owner | Delete a listing and its reviews |
 | POST | `/listings/:id/reviews` | Logged in | Add a review |
 | DELETE | `/listings/:id/reviews/:reviewId` | Review author | Delete a review |
-| POST | `/bookings` | Logged in | Create a booking (JSON: `listingId`, `checkIn`, `checkOut`) |
+| GET | `/api/v1/listings/:id/quote?checkIn=&checkOut=` | Public | Price breakdown and availability (JSON) |
+| POST | `/api/v1/bookings` | Logged in | Create a booking (JSON: `listingId`, `checkIn`, `checkOut`; header `Idempotency-Key`) |
 | GET | `/bookings` | Logged in | Your bookings |
 | GET | `/admin` | Admin | Admin dashboard |
 | GET/POST | `/signup`, `/login` | Public | Register and log in |
@@ -153,7 +154,10 @@ Promote an existing user with `npm run create-admin -- --promote <username>`, an
 - **User**: `username`, `email` (unique), `role` (`customer` | `admin`), plus password hash and salt from `passport-local-mongoose`
 - **Listing**: `title`, `description`, `image` (`url`, `filename`), `price` (per night, INR), `location`, `country`, `category`, `geometry` (GeoJSON point), `reviews[]`, `owner`
 - **Review**: `rating` (1–5), `comment`, `author`, `createdAt`
-- **Booking**: `listing`, `user`, `checkIn`, `checkOut`, `totalPrice`, `createdAt`
+- **Listing** also has `units` (bookable units per night, default 1)
+- **Booking**: `listing`, `user`, `checkIn`, `checkOut`, `status`, `nights`, `amountPaise`, `currency`, `priceBreakdown`, `totalPrice` (rupees), `createdAt`
+- **InventoryNight**: `listing`, `date`, `reserved`; unique per listing-night
+- **IdempotencyRecord**: `user`, `scope`, `key`, `requestHash`, stored response; unique per user+scope+key, deleted after 24 h
 
 Prices are displayed in Indian rupees (₹).
 
@@ -166,6 +170,7 @@ Prices are displayed in Indian rupees (₹).
 | `npm test` | Run the automated tests (downloads a MongoDB binary on first run) |
 | `npm run seed` | Reset and seed sample listings |
 | `npm run create-admin` | Create, promote or list admin accounts |
+| `npm run migrate:bookings` | Dry-run (add `-- --apply` to write) moving pre-existing bookings onto the inventory model |
 | `node init/migrate_categories.js` | Assign a category to existing listings based on their title and description |
 
 The `scratch/` folder holds older throwaway scripts for manual checks; the automated suite lives in `test/`.
@@ -179,7 +184,7 @@ The `scratch/` folder holds older throwaway scripts for manual checks; the autom
 ## Known limitations
 
 - The Content-Security-Policy still allows inline scripts because the views use inline `<script>` blocks and `onclick` attributes.
-- Bookings are confirmed immediately. There is no payment step and no check for overlapping dates on the same listing.
+- Bookings are confirmed immediately. There is no payment step yet, and no cancellation (planned for the next milestones).
 
 ## License
 

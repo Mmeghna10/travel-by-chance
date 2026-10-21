@@ -23,9 +23,19 @@ test("GET /readyz is 200 when the database is reachable", async () => {
   assert.equal(res.body.db, "ok");
 });
 
-test("GET /readyz is 503 when the database is disconnected", async () => {
-  // Runs last in this file; stopDb()'s second disconnect is a no-op.
-  await mongoose.disconnect();
+test("GET /readyz is 503 when the database is disconnected", async (t) => {
+  // Simulate the outage instead of really disconnecting: a real disconnect can
+  // interrupt the session store's background index creation and surface as an
+  // unhandled rejection (that made this test flaky).
+  Object.defineProperty(mongoose.connection, "readyState", { get: () => 0, configurable: true });
+  t.after(() => delete mongoose.connection.readyState);
+
+  const res = await request(app).get("/readyz");
+  assert.equal(res.status, 503);
+});
+
+test("GET /readyz is 503 when the database stops answering pings", async (t) => {
+  t.mock.method(mongoose.connection.db, "admin", () => ({ ping: async () => { throw new Error("timeout"); } }));
   const res = await request(app).get("/readyz");
   assert.equal(res.status, 503);
 });
