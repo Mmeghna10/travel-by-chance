@@ -21,16 +21,28 @@ const config = {
   // Number of reverse proxies in front of the app (needed for correct client
   // IPs in rate limiting and for secure cookies behind HTTPS termination).
   trustProxy: Number(process.env.TRUST_PROXY) || 0,
+  payments: {
+    keyId: process.env.RAZORPAY_KEY_ID,
+    keySecret: process.env.RAZORPAY_KEY_SECRET,
+    // Optional locally (webhooks can't reach localhost without a tunnel);
+    // reconciliation catches up on payments without it.
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET,
+    allowLive: process.env.ALLOW_LIVE_PAYMENTS === "true",
+  },
   bookings: {
     // When true, new bookings start as PENDING_PAYMENT and hold their nights
-    // for holdMinutes. Stays false until online payment exists (Milestone 4).
-    requirePayment: process.env.REQUIRE_PAYMENT === "true",
+    // for holdMinutes until paid. Defaults to on when Razorpay keys are set.
+    requirePayment:
+      process.env.REQUIRE_PAYMENT !== undefined
+        ? process.env.REQUIRE_PAYMENT === "true"
+        : Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
     holdMinutes: Number(process.env.BOOKING_HOLD_MINUTES) || 15,
   },
-  // Run the expiry worker inside each web process (simplest deployment).
-  // Set RUN_EXPIRY_WORKER=false when running worker.js separately.
-  runExpiryWorker: process.env.RUN_EXPIRY_WORKER !== "false",
-  expiryIntervalMs: (Number(process.env.EXPIRY_INTERVAL_SECONDS) || 30) * 1000,
+  // Run background jobs (hold expiry, refunds, reconciliation) inside each
+  // web process (simplest deployment). Set RUN_BACKGROUND_JOBS=false when
+  // running worker.js separately. RUN_EXPIRY_WORKER is the Milestone 3 name.
+  runBackgroundJobs: (process.env.RUN_BACKGROUND_JOBS ?? process.env.RUN_EXPIRY_WORKER) !== "false",
+  jobIntervalMs: (Number(process.env.JOB_INTERVAL_SECONDS ?? process.env.EXPIRY_INTERVAL_SECONDS) || 30) * 1000,
 };
 
 function assertRequired() {

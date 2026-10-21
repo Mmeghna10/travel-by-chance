@@ -10,6 +10,7 @@
 // releasing inventory) don't happen twice.
 const Booking = require("../../models/booking.js");
 const Listing = require("../../models/listing.js");
+const Refund = require("../../models/refund.js");
 const ExpressError = require("../../utils/ExpressError.js");
 const { nightsBetween } = require("./dates.js");
 const { ensureNights, reserveNights, releaseNights } = require("./inventory.js");
@@ -80,6 +81,17 @@ async function applyTransition({ booking, from, to, actor, session, set = {}, re
     { session },
   );
   if (res.modifiedCount !== 1) return false;
+
+  // Transactional outbox: the refund request is written in the same
+  // transaction as the status change, so a booking can't be committed as
+  // "needs a refund" without the refund being queued (and vice versa).
+  if (to === "REFUND_PENDING") {
+    await Refund.updateOne(
+      { booking: booking._id },
+      { $setOnInsert: { booking: booking._id, amountPaise: booking.amountPaise, receipt: `rf_${booking._id}`, status: "REQUESTED" } },
+      { upsert: true, session },
+    );
+  }
 
   const effect = inventoryEffect(from, to);
   if (effect !== "none") {

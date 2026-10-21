@@ -304,10 +304,10 @@
           </div>
         </div>
         <button class="btn-reserve-action" id="confirm-booking-btn" onclick="confirmBooking()" style="font-size: 0.95rem;">
-          <i class="fa-solid fa-check me-2"></i>Request to Book
+          <% if (paymentsEnabled) { %><i class="fa-solid fa-lock me-2"></i>Continue to payment<% } else { %><i class="fa-solid fa-check me-2"></i>Request to Book<% } %>
         </button>
         <p style="text-align: center; font-size: 0.8rem; color: var(--text-subtle); margin-top: 0.85rem;">
-          Instant confirmation · Online payment is not enabled yet
+          <% if (paymentsEnabled) { %>Your dates are held for a few minutes while you pay · Test mode, no real money<% } else { %>Instant confirmation · Online payment is not enabled yet<% } %>
         </p>
       </div>
     </div>
@@ -315,6 +315,10 @@
 </div>
 
 <script src="/js/map.js"></script>
+<% if (paymentsEnabled) { %>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/js/payments.js"></script>
+<% } %>
 <script>
 // All prices come from the server (GET /api/v1/listings/:id/quote); this page
 // only displays them. Booking correctness never depends on anything here.
@@ -408,9 +412,15 @@ async function confirmBooking() {
     });
     const result = await res.json();
     if (res.ok && result.success) {
-      btn.innerHTML = result.booking.status === 'CONFIRMED'
-        ? '<i class="fa-solid fa-check me-2"></i>Booking Confirmed!'
-        : '<i class="fa-regular fa-clock me-2"></i>Dates held for you';
+      if (result.booking.status === 'PENDING_PAYMENT' && window.payForBooking) {
+        // Dates are held; now collect payment. Confirmation happens server-side.
+        bootstrap.Modal.getInstance(document.getElementById('bookingModal')).hide();
+        btn.innerHTML = orig;
+        btn.disabled = false;
+        payForBooking(result.booking.id, (msg) => setAvailability(msg, !/failed|not completed/i.test(msg)));
+        return;
+      }
+      btn.innerHTML = '<i class="fa-solid fa-check me-2"></i>Booking Confirmed!';
       btn.style.background = 'var(--success)';
       setTimeout(() => { window.location.href = '/bookings'; }, 1500);
       return;

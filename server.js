@@ -3,12 +3,18 @@ const { config, assertRequired } = require("./config/env.js");
 const mongoose = require("mongoose");
 const { createApp } = require("./app.js");
 const { ensureIndexes } = require("./modules/bookings/service.js");
-const { startExpiryWorker } = require("./modules/bookings/expiryWorker.js");
+const { startBackgroundJobs } = require("./modules/jobs/runner.js");
+const { configurePayments, paymentsEnabled } = require("./modules/payments/gateway.js");
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 async function start() {
   assertRequired();
+  configurePayments(config.payments); // throws on live keys unless explicitly allowed
+  if (config.bookings.requirePayment && !paymentsEnabled()) {
+    throw new Error("REQUIRE_PAYMENT=true needs RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET; bookings could never be paid.");
+  }
+  console.log(paymentsEnabled() ? "payments: Razorpay (test mode)" : "payments: disabled (bookings confirm instantly)");
 
   // Fail fast: don't accept traffic we can't serve.
   await mongoose.connect(config.dbUrl, { serverSelectionTimeoutMS: 10_000 });
@@ -23,7 +29,7 @@ async function start() {
     bookings: config.bookings,
   });
 
-  const worker = config.runExpiryWorker ? startExpiryWorker({ intervalMs: config.expiryIntervalMs }) : null;
+  const worker = config.runBackgroundJobs ? startBackgroundJobs({ intervalMs: config.jobIntervalMs }) : null;
 
   const server = app.listen(config.port, () => {
     console.log(`Server running on port ${config.port}`);

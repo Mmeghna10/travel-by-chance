@@ -28,6 +28,8 @@ const adminRouter = require("./routes/admin.js");
 const apiRouter = require("./routes/api.js");
 const healthRouter = require("./routes/health.js");
 const listingController = require("./controllers/listings.js");
+const paymentController = require("./controllers/payments.js");
+const { paymentsEnabled } = require("./modules/payments/gateway.js");
 
 /**
  * @param {object} options
@@ -52,6 +54,15 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
   // Liveness/readiness first: no session, no DB writes, cheap for probes.
   app.use(healthRouter);
 
+  // Razorpay webhooks need the RAW body bytes to check the HMAC signature, so
+  // this route is registered before express.json() could parse it. It also
+  // runs without sessions: Razorpay isn't a logged-in user.
+  app.post(
+    "/api/v1/webhooks/razorpay",
+    express.raw({ type: "application/json", limit: "1mb" }),
+    wrapAsync(paymentController.webhook),
+  );
+
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -60,7 +71,7 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
           // 'unsafe-inline' is still needed: the views use inline <script>
           // blocks and onclick/onmouseover attributes. Moving those to files
           // (and dropping 'unsafe-inline') is listed as a known limitation.
-          scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://api.mapbox.com"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://api.mapbox.com", "https://checkout.razorpay.com", "https://cdn.razorpay.com"],
           scriptSrcAttr: ["'unsafe-inline'"],
           styleSrc: [
             "'self'",
@@ -72,7 +83,9 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
           ],
           fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
           imgSrc: ["'self'", "data:", "blob:", "https:"],
-          connectSrc: ["'self'", "https://api.mapbox.com", "https://events.mapbox.com"],
+          connectSrc: ["'self'", "https://api.mapbox.com", "https://events.mapbox.com", "https://api.razorpay.com", "https://lumberjack.razorpay.com", "https://cdn.razorpay.com"],
+          // Razorpay Checkout opens in an iframe from these origins.
+          frameSrc: ["https://api.razorpay.com", "https://checkout.razorpay.com"],
           workerSrc: ["'self'", "blob:"],
           childSrc: ["blob:"],
           objectSrc: ["'none'"],
@@ -130,6 +143,7 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
     res.locals.currUser = req.user;
+    res.locals.paymentsEnabled = paymentsEnabled();
     res.locals.searchQuery = req.query.q || "";
     res.locals.category = req.query.category || "";
     next();
@@ -171,7 +185,11 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
   });
 
   app.use((err, req, res, next) => {
-    let { statusCode = 500, message = "Something went wrong!" } = err;
+    // Only trust status codes from our own errors and Express/body-parser
+    // client errors (err.expose). Anything else (e.g. a Razorpay SDK error
+    // carrying Razorpay's own 401) must not leak through as OUR status code.
+    let statusCode = err instanceof ExpressError ? err.statusCode : err.expose && err.status ? err.status : 500;
+    let message = err.message || "Something went wrong!";
 
     // A malformed id like /listings/abc is a missing page, not a server error.
     if (err instanceof mongoose.Error.CastError) {
@@ -181,9 +199,11 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
       statusCode = 400;
     }
 
-    if (statusCode >= 500) {
+    // Unexpected errors: log everything, tell the client nothing internal.
+    // Our own 5xx ExpressErrors (502/503) already carry a safe message.
+    if (statusCode >= 500 && !(err instanceof ExpressError)) {
       console.error(err);
-      message = "Something went wrong!"; // don't leak internals to the client
+      message = "Something went wrong!";
     }
 
     const wantsJson =

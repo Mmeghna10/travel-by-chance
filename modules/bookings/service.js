@@ -5,6 +5,9 @@ const Listing = require("../../models/listing.js");
 const Booking = require("../../models/booking.js");
 const InventoryNight = require("../../models/inventoryNight.js");
 const IdempotencyRecord = require("../../models/idempotencyRecord.js");
+const Payment = require("../../models/payment.js");
+const Refund = require("../../models/refund.js");
+const WebhookEvent = require("../../models/webhookEvent.js");
 const ExpressError = require("../../utils/ExpressError.js");
 const { validateStay, formatDay } = require("./dates.js");
 const { quote } = require("./pricing.js");
@@ -18,7 +21,9 @@ const KEY_RE = /^[A-Za-z0-9_-]{8,128}$/;
 // exist before the first request, not "eventually" via mongoose's background
 // autoIndex. Called at startup (server.js) and in tests.
 async function ensureIndexes() {
-  await Promise.all([InventoryNight.createIndexes(), IdempotencyRecord.createIndexes(), Booking.createIndexes()]);
+  await Promise.all(
+    [InventoryNight, IdempotencyRecord, Booking, Payment, Refund, WebhookEvent].map((model) => model.createIndexes()),
+  );
 }
 
 function hashRequest({ listingId, checkIn, checkOut }) {
