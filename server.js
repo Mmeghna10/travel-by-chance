@@ -3,6 +3,7 @@ const { config, assertRequired } = require("./config/env.js");
 const mongoose = require("mongoose");
 const { createApp } = require("./app.js");
 const { ensureIndexes } = require("./modules/bookings/service.js");
+const { startExpiryWorker } = require("./modules/bookings/expiryWorker.js");
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -19,7 +20,10 @@ async function start() {
     sessionSecret: config.sessionSecret,
     isProduction: config.isProduction,
     trustProxy: config.trustProxy,
+    bookings: config.bookings,
   });
+
+  const worker = config.runExpiryWorker ? startExpiryWorker({ intervalMs: config.expiryIntervalMs }) : null;
 
   const server = app.listen(config.port, () => {
     console.log(`Server running on port ${config.port}`);
@@ -39,6 +43,7 @@ async function start() {
 
     // Stop accepting new connections, let in-flight requests finish, then close the DB.
     server.close(async () => {
+      if (worker) await worker.stop();
       await Promise.allSettled([app.get("sessionStore").collectionP]);
       await mongoose.disconnect();
       console.log("Shutdown complete");

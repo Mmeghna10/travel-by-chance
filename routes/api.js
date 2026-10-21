@@ -7,5 +7,7 @@ const bookingController = require("../controllers/bookings.js");
 
 router.get("/listings/:id/quote", wrapAsync(bookingController.quote));
 router.post("/bookings", isLoggedIn, wrapAsync(bookingController.createBooking));
+router.get("/bookings/:id", isLoggedIn, wrapAsync(bookingController.showBooking));
+router.post("/bookings/:id/cancel", isLoggedIn, wrapAsync(bookingController.cancelBookingApi));
 
 module.exports = router;

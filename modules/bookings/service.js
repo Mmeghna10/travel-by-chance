@@ -11,6 +11,7 @@ const { quote } = require("./pricing.js");
 const { ensureNights, reserveNights, unitsLeft } = require("./inventory.js");
 
 const SCOPE = "booking.create";
+const DEFAULT_HOLD_MINUTES = 15;
 const KEY_RE = /^[A-Za-z0-9_-]{8,128}$/;
 
 // Unique indexes are what make inventory and idempotency safe, so they must
@@ -54,10 +55,21 @@ async function getQuote({ listingId, checkIn, checkOut, now }) {
 }
 
 /**
- * Creates a CONFIRMED booking exactly once per (user, idempotencyKey).
+ * Creates a booking exactly once per (user, idempotencyKey).
+ * With requirePayment the booking starts as PENDING_PAYMENT and holds its
+ * nights for holdMinutes; otherwise it is CONFIRMED immediately.
  * Returns { statusCode, body, replayed }.
  */
-async function createBooking({ userId, listingId, checkIn, checkOut, idempotencyKey, now }) {
+async function createBooking({
+  userId,
+  listingId,
+  checkIn,
+  checkOut,
+  idempotencyKey,
+  now = new Date(),
+  requirePayment = false,
+  holdMinutes = DEFAULT_HOLD_MINUTES,
+}) {
   if (typeof idempotencyKey !== "string" || !KEY_RE.test(idempotencyKey)) {
     throw new ExpressError(
       400,
@@ -81,13 +93,16 @@ async function createBooking({ userId, listingId, checkIn, checkOut, idempotency
   // Generated up front so the stored response can contain the id, and so a
   // retried transaction attempt reuses the same id.
   const bookingId = new mongoose.Types.ObjectId();
+  const status = requirePayment ? "PENDING_PAYMENT" : "CONFIRMED";
+  const expiresAt = requirePayment ? new Date(now.getTime() + holdMinutes * 60 * 1000) : undefined;
   const body = {
     success: true,
-    message: "Booking confirmed!",
+    message: requirePayment ? "Dates held. Complete payment to confirm." : "Booking confirmed!",
     booking: {
       id: String(bookingId),
       listingId: String(listing._id),
-      status: "CONFIRMED",
+      status,
+      expiresAt: expiresAt ? expiresAt.toISOString() : undefined,
       checkIn: formatDay(stay.checkIn),
       checkOut: formatDay(stay.checkOut),
       nights: price.nights,
@@ -123,7 +138,9 @@ async function createBooking({ userId, listingId, checkIn, checkOut, idempotency
             user: userId,
             checkIn: stay.checkIn,
             checkOut: stay.checkOut,
-            status: "CONFIRMED",
+            status,
+            expiresAt,
+            statusHistory: [{ to: status, actor: "guest", at: now, reason: "created" }],
             nights: price.nights,
             currency: price.currency,
             amountPaise: price.totalPaise,

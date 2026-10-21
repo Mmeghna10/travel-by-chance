@@ -150,7 +150,7 @@ module.exports.destroyListing = async (req, res) => {
   // no status are pre-Milestone-2 bookings and count as active.
   const hasUpcomingStays = await Booking.exists({
     listing: id,
-    status: { $nin: ["EXPIRED", "CANCELLED", "REFUNDED"] },
+    $or: [{ status: { $in: Booking.ACTIVE_STATUSES } }, { status: { $exists: false } }],
     checkOut: { $gt: new Date() },
   });
   if (hasUpcomingStays) {

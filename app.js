@@ -35,8 +35,9 @@ const listingController = require("./controllers/listings.js");
  * @param {boolean} [options.isProduction]
  * @param {number}  [options.trustProxy]  number of proxies in front of the app
  * @param {object}  [options.rateLimit]   overrides, e.g. { authMax: 5 }
+ * @param {object}  [options.bookings]    { requirePayment, holdMinutes }
  */
-function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLimit = {} }) {
+function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLimit = {}, bookings = {} }) {
   const app = express();
 
   if (trustProxy) app.set("trust proxy", trustProxy);
@@ -46,6 +47,7 @@ function createApp({ sessionSecret, isProduction = false, trustProxy = 0, rateLi
   app.locals.safeJson = safeJson;
   app.locals.formatPaise = formatPaise;
   app.locals.mapToken = process.env.MAP_TOKEN;
+  app.set("bookingOptions", bookings);
 
   // Liveness/readiness first: no session, no DB writes, cheap for probes.
   app.use(healthRouter);

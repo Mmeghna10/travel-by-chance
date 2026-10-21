@@ -408,7 +408,9 @@ async function confirmBooking() {
     });
     const result = await res.json();
     if (res.ok && result.success) {
-      btn.innerHTML = '<i class="fa-solid fa-check me-2"></i>Booking Confirmed!';
+      btn.innerHTML = result.booking.status === 'CONFIRMED'
+        ? '<i class="fa-solid fa-check me-2"></i>Booking Confirmed!'
+        : '<i class="fa-regular fa-clock me-2"></i>Dates held for you';
       btn.style.background = 'var(--success)';
       setTimeout(() => { window.location.href = '/bookings'; }, 1500);
       return;

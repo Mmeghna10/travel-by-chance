@@ -21,6 +21,16 @@ const config = {
   // Number of reverse proxies in front of the app (needed for correct client
   // IPs in rate limiting and for secure cookies behind HTTPS termination).
   trustProxy: Number(process.env.TRUST_PROXY) || 0,
+  bookings: {
+    // When true, new bookings start as PENDING_PAYMENT and hold their nights
+    // for holdMinutes. Stays false until online payment exists (Milestone 4).
+    requirePayment: process.env.REQUIRE_PAYMENT === "true",
+    holdMinutes: Number(process.env.BOOKING_HOLD_MINUTES) || 15,
+  },
+  // Run the expiry worker inside each web process (simplest deployment).
+  // Set RUN_EXPIRY_WORKER=false when running worker.js separately.
+  runExpiryWorker: process.env.RUN_EXPIRY_WORKER !== "false",
+  expiryIntervalMs: (Number(process.env.EXPIRY_INTERVAL_SECONDS) || 30) * 1000,
 };
 
 function assertRequired() {

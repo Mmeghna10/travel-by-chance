@@ -10,6 +10,7 @@ Built with Node.js, Express, EJS and MongoDB.
 - **11 categories**: Trending, Rooms, Iconic Cities, Mountains, Castles, Amazing Pools, Camping, Farms, Arctic, Domes, Boats.
 - **Listing pages** with image, description, average star rating, reviews, and a Mapbox map pinned to the location.
 - **Bookings without double booking**: pick dates to see live availability and a server-computed price (nightly rate × nights, plus a 5% cleaning fee and a 12% service fee, each on one night's rate, once per stay). Each listing has a number of bookable `units`; nights are reserved atomically inside a MongoDB transaction so a night can never be oversold, even under 100 simultaneous requests. Booking requests are idempotent (`Idempotency-Key`), so double clicks and retries never create duplicates. See [docs/03-milestone-2-booking-core.md](docs/03-milestone-2-booking-core.md).
+- **Booking lifecycle**: an explicit state machine (`PENDING_PAYMENT`, `CONFIRMED`, `EXPIRED`, `CANCELLED`, `REFUND_PENDING`, …) with guarded, audited transitions. Guests can cancel before check-in, which releases the dates. Unpaid holds expire automatically via a background worker. See [docs/04-milestone-3-lifecycle.md](docs/04-milestone-3-lifecycle.md).
 - **Reviews**: logged-in users can leave a 1–5 star review; only the author can delete their own.
 - **Authentication**: sign up, log in and log out with Passport (local strategy). Sessions are stored in MongoDB.
 - **Roles**: `customer` and `admin` (Host). Only admins can create listings; only a listing's owner can edit or delete it.
@@ -89,6 +90,10 @@ cp .env.example .env
 | `DNS_SERVERS`      | Optional. Comma-separated resolvers (e.g. `8.8.8.8,8.8.4.4`) if your network can't resolve Atlas SRV records |
 | `TRUST_PROXY`      | Optional. Number of reverse proxies in front of the app (set `1` behind nginx/Render/Railway) |
 | `ADMIN_PASSWORD`   | Only read by `npm run create-admin` |
+| `REQUIRE_PAYMENT`  | `true` makes new bookings start as `PENDING_PAYMENT` (keep `false` until online payment is added) |
+| `BOOKING_HOLD_MINUTES` | How long an unpaid booking holds its dates (default 15) |
+| `RUN_EXPIRY_WORKER` | `false` to stop the web process from running the expiry worker (then run `npm run worker`) |
+| `EXPIRY_INTERVAL_SECONDS` | How often expired holds are swept (default 30) |
 
 The server refuses to start if `ATLASDB_URL` or `SECRET` is missing or the database is unreachable.
 
@@ -141,6 +146,9 @@ Promote an existing user with `npm run create-admin -- --promote <username>`, an
 | DELETE | `/listings/:id/reviews/:reviewId` | Review author | Delete a review |
 | GET | `/api/v1/listings/:id/quote?checkIn=&checkOut=` | Public | Price breakdown and availability (JSON) |
 | POST | `/api/v1/bookings` | Logged in | Create a booking (JSON: `listingId`, `checkIn`, `checkOut`; header `Idempotency-Key`) |
+| GET | `/api/v1/bookings/:id` | Owner | Booking status (JSON) |
+| POST | `/api/v1/bookings/:id/cancel` | Owner | Cancel (JSON) |
+| POST | `/bookings/:id/cancel` | Owner | Cancel from the My Bookings page |
 | GET | `/bookings` | Logged in | Your bookings |
 | GET | `/admin` | Admin | Admin dashboard |
 | GET/POST | `/signup`, `/login` | Public | Register and log in |
@@ -170,6 +178,7 @@ Prices are displayed in Indian rupees (₹).
 | `npm test` | Run the automated tests (downloads a MongoDB binary on first run) |
 | `npm run seed` | Reset and seed sample listings |
 | `npm run create-admin` | Create, promote or list admin accounts |
+| `npm run worker` | Run the background expiry worker as its own process |
 | `npm run migrate:bookings` | Dry-run (add `-- --apply` to write) moving pre-existing bookings onto the inventory model |
 | `node init/migrate_categories.js` | Assign a category to existing listings based on their title and description |
 
@@ -184,7 +193,7 @@ The `scratch/` folder holds older throwaway scripts for manual checks; the autom
 ## Known limitations
 
 - The Content-Security-Policy still allows inline scripts because the views use inline `<script>` blocks and `onclick` attributes.
-- Bookings are confirmed immediately. There is no payment step yet, and no cancellation (planned for the next milestones).
+- Bookings are confirmed immediately because online payment isn't integrated yet (next milestone). Changing a booking's dates isn't supported; cancel and rebook instead.
 
 ## License
 

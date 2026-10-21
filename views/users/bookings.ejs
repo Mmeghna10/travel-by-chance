@@ -39,8 +39,10 @@
                 alt="<%= booking.listing.title %>"
                 onmouseover="this.style.transform='scale(1.04)';"
                 onmouseout="this.style.transform='';">
-              <% const st = booking.status || "CONFIRMED"; const stLabel = st.replace("_", " ").toLowerCase(); %>
-              <span style="position: absolute; top: 12px; right: 12px; background: <%= st === "CONFIRMED" ? "var(--success)" : "var(--text-muted)" %>; color: white; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.85rem; border-radius: var(--radius-pill); text-transform: capitalize;">
+              <% const st = booking.status || "CONFIRMED"; const stLabel = st.replace("_", " ").toLowerCase();
+                 const stColor = { CONFIRMED: "var(--success)", PENDING_PAYMENT: "var(--amber-dark, #b7791f)", REFUND_PENDING: "var(--amber-dark, #b7791f)" }[st] || "var(--text-muted)";
+                 const canCancel = ["CONFIRMED", "PENDING_PAYMENT"].includes(st) && booking.checkIn > today; %>
+              <span style="position: absolute; top: 12px; right: 12px; background: <%= stColor %>; color: white; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.85rem; border-radius: var(--radius-pill); text-transform: capitalize;">
                 <i class="fa-solid <%= st === "CONFIRMED" ? "fa-check" : "fa-circle-info" %> me-1"></i><%= stLabel %>
               </span>
             </div>
@@ -70,6 +72,19 @@
                   </span>
                 </div>
               </div>
+
+              <% if (st === "PENDING_PAYMENT" && booking.expiresAt) { %>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin: -0.25rem 0 1rem;">
+                  <i class="fa-regular fa-clock me-1"></i>Held until <%= booking.expiresAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" }) %> IST, then released if unpaid
+                </p>
+              <% } %>
+              <% if (canCancel) { %>
+                <form method="POST" action="/bookings/<%= booking._id %>/cancel" onsubmit="return confirm('Cancel this booking? The dates will be released.');" style="margin-bottom: 1rem;">
+                  <button type="submit" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-main); border-radius: var(--radius-pill); background: white; font-size: 0.82rem; font-weight: 700; color: var(--danger); cursor: pointer;">
+                    <i class="fa-solid fa-xmark me-1"></i>Cancel booking
+                  </button>
+                </form>
+              <% } %>
 
               <!-- Price + Link -->
               <div style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--border-light);">
