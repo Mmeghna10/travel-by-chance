@@ -1,0 +1,7 @@
+<nav class="policy-nav" aria-label="Policies">
+  <% [["/terms","Terms"],["/privacy","Privacy"],["/refund-policy","Cancellation & Refunds"],["/delivery-policy","Service Delivery"],["/contact","Contact"]].forEach(([href, label]) => { %>
+  <a href="<%= href %>"><%= label %></a>
+  <% }); %>
+</nav>
+<h1 class="policy-title"><%= title %></h1>
+<p class="policy-updated">Last updated: <%= lastUpdated %></p>

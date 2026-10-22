@@ -4,10 +4,11 @@ const mongoose = require("mongoose");
 const { createApp } = require("./app.js");
 const { ensureIndexes } = require("./modules/bookings/service.js");
 const { startBackgroundJobs } = require("./modules/jobs/runner.js");
-const { configurePayments, paymentsEnabled, paymentsMode } = require("./modules/payments/gateway.js");
+const { configurePayments, paymentsEnabled, paymentsMode, paymentsLive } = require("./modules/payments/gateway.js");
 const { logger } = require("./modules/observability/logger.js");
 const { installProcessHandlers, reportError } = require("./modules/observability/errors.js");
 const { instrumentMongo } = require("./modules/observability/db.js");
+const { connectRedis, closeRedis } = require("./modules/cache/redis.js");
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -18,9 +19,17 @@ async function start() {
   if (config.bookings.requirePayment && !paymentsEnabled()) {
     throw new Error("REQUIRE_PAYMENT=true needs Razorpay keys (or DEMO_PAYMENTS=true); bookings could never be paid.");
   }
+  if (paymentsLive()) {
+    const missing = ["email", "phone", "address"].filter((k) => !config.business[k]);
+    if (missing.length) {
+      throw new Error(
+        `Live payments need real contact details on the site: set ${missing.map((k) => ({ email: "SUPPORT_EMAIL", phone: "SUPPORT_PHONE", address: "BUSINESS_ADDRESS" })[k]).join(", ")}.`,
+      );
+    }
+  }
   const mode = paymentsMode();
   const describe = {
-    razorpay: "payments: Razorpay (test mode)",
+    razorpay: paymentsLive() ? "payments: Razorpay LIVE (real money)" : "payments: Razorpay (test mode)",
     demo: "payments: DEMO mode (simulated gateway, no real money)",
   };
   logger.info({ payments: mode || "disabled" }, describe[mode] || "payments: disabled (bookings confirm instantly)");
@@ -32,6 +41,9 @@ async function start() {
   logger.info("connected to database");
   // Booking correctness depends on unique indexes; build them before serving.
   await ensureIndexes();
+  // Optional: waits briefly, then continues without Redis if it isn't up.
+  await connectRedis(config.redisUrl);
+  logger.info({ redis: config.redisUrl ? "configured" : "off" }, config.redisUrl ? "redis: shared rate limits + listing cache" : "redis: off (per-process rate limits, no cache)");
 
   const app = createApp({
     sessionSecret: config.sessionSecret,
@@ -40,6 +52,7 @@ async function start() {
     bookings: config.bookings,
     metricsToken: config.metricsToken,
     rateLimit: config.rateLimit,
+    business: config.business,
   });
 
   const worker = config.runBackgroundJobs ? startBackgroundJobs({ intervalMs: config.jobIntervalMs }) : null;
@@ -64,6 +77,7 @@ async function start() {
     server.close(async () => {
       if (worker) await worker.stop();
       await Promise.allSettled([app.get("sessionStore").collectionP]);
+      await closeRedis();
       await mongoose.disconnect();
       logger.info("Shutdown complete");
       process.exit(0);

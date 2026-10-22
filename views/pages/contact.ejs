@@ -1,0 +1,18 @@
+<% layout('/layouts/boilerplate') %>
+<article class="policy-page">
+  <%- include("../includes/policyNav.ejs") %>
+
+  <p>For questions about a booking, a payment or a refund, contact <%= business.name %>. Please include your username and the stay's name and dates.</p>
+
+  <% if (business.email || business.phone || business.address) { %>
+  <dl class="policy-contact">
+    <% if (business.email) { %><dt>Email</dt><dd><a href="mailto:<%= business.email %>"><%= business.email %></a></dd><% } %>
+    <% if (business.phone) { %><dt>Phone</dt><dd><a href="tel:<%= business.phone.replace(/\s+/g, '') %>"><%= business.phone %></a></dd><% } %>
+    <% if (business.address) { %><dt>Address</dt><dd><%= business.address %></dd><% } %>
+  </dl>
+  <% } else { %>
+  <p class="policy-note">Contact details haven't been added to this site yet.</p>
+  <% } %>
+
+  <p>We aim to reply within 2 working days. For refunds, see the <a href="/refund-policy">Cancellation &amp; Refund Policy</a> first; it covers most questions.</p>
+</article>

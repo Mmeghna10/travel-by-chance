@@ -27,6 +27,9 @@ const config = {
   // IPs in rate limiting and for secure cookies behind HTTPS termination).
   trustProxy: Number(process.env.TRUST_PROXY) || 0,
   metricsToken: process.env.METRICS_TOKEN || undefined,
+  // Optional. Shared rate-limit counters + listing cache. Unset = per-process
+  // limits, no cache. Never holds data that matters (see modules/cache/redis.js).
+  redisUrl: process.env.REDIS_URL || undefined,
   // Per-IP login/signup attempts per 15 min, per-user booking attempts per minute.
   // Raised only for load tests; keep the defaults in real deployments.
   rateLimit: {
@@ -45,6 +48,15 @@ const config = {
     demoSecret: process.env.SECRET,
     isProduction: process.env.NODE_ENV === "production",
     allowDemoInProduction: process.env.ALLOW_DEMO_PAYMENTS_IN_PRODUCTION === "true",
+  },
+  // Shown on the Contact / policy pages and in the footer. Payment providers
+  // (Razorpay) check that a live site shows real contact details and policies,
+  // so live payments refuse to start without them (see server.js).
+  business: {
+    name: process.env.BUSINESS_NAME || "TravelByChance",
+    email: process.env.SUPPORT_EMAIL || "",
+    phone: process.env.SUPPORT_PHONE || "",
+    address: process.env.BUSINESS_ADDRESS || "",
   },
   bookings: {
     // When true, new bookings start as PENDING_PAYMENT and hold their nights

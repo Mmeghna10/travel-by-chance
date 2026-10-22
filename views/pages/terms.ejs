@@ -1,0 +1,45 @@
+<% layout('/layouts/boilerplate') %>
+<article class="policy-page">
+  <%- include("../includes/policyNav.ejs") %>
+
+  <p>These terms apply when you use <%= business.name %> to find and book stays. By creating an account or making a booking, you agree to them.</p>
+
+  <h2>1. Your account</h2>
+  <ul>
+    <li>Keep your login details private. You are responsible for bookings made from your account.</li>
+    <li>Give accurate information, and don't create accounts for other people without their permission.</li>
+  </ul>
+
+  <h2>2. Bookings and prices</h2>
+  <ul>
+    <li>Prices are shown in Indian Rupees (INR) per night. The total shown before you pay includes the nightly price for each night plus a one-time cleaning fee and service fee. That total is the amount you pay.</li>
+    <li>A booking is <strong>confirmed only after we have verified your payment</strong> with our payment partner. You'll see it as <em>Confirmed</em> in <a href="/bookings">My Bookings</a>.</li>
+    <li>While you pay, your dates are held for <%= holdMinutes %> minutes. See the <a href="/refund-policy">Cancellation &amp; Refund Policy</a> for what happens if a hold expires.</li>
+  </ul>
+
+  <h2>3. Payments</h2>
+  <ul>
+    <li>Payments are processed by Razorpay, a licensed payment aggregator. Card, UPI and bank details are entered on Razorpay's checkout and are <strong>never stored on our servers</strong>.</li>
+    <li>We keep a record of each payment (amount, status and Razorpay's reference numbers) so we can confirm bookings and process refunds.</li>
+  </ul>
+
+  <h2>4. Cancellations and refunds</h2>
+  <p>Covered in full by our <a href="/refund-policy">Cancellation &amp; Refund Policy</a>.</p>
+
+  <h2>5. Listings and reviews</h2>
+  <ul>
+    <li>We try to keep listing details accurate. If a stay is materially different from its description, contact us.</li>
+    <li>Reviews must be honest and about your own stay. We may remove reviews that are abusive, fake or unrelated.</li>
+  </ul>
+
+  <h2>6. Acceptable use</h2>
+  <p>Don't misuse the site: for example, by trying to access other people's bookings or accounts, sending automated traffic, or interfering with how the service works. We may suspend accounts that do.</p>
+
+  <h2>7. Liability</h2>
+  <p>We provide the platform with reasonable care, but can't guarantee it will always be available or error-free. To the extent the law allows, our liability for any booking is limited to the amount you paid for it.</p>
+
+  <h2>8. Changes and governing law</h2>
+  <p>We may update these terms; the date above shows the latest version. These terms are governed by the laws of India.</p>
+
+  <p>Questions? <a href="/contact">Contact us</a>.</p>
+</article>

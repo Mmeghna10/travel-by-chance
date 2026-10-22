@@ -74,6 +74,23 @@ const dbCommandFailures = metric(client.Counter, {
   labelNames: ["command", "code_name"],
 });
 
+const cacheRequests = metric(client.Counter, {
+  name: "cache_requests_total",
+  help: "Listing cache lookups by result (hit, miss, error, bypass = Redis unavailable)",
+  labelNames: ["cache", "result"],
+});
+
+const redisErrors = metric(client.Counter, {
+  name: "redis_errors_total",
+  help: "Redis client errors (connection drops, failed reconnects)",
+});
+
+const rateLimitStoreFallbacks = metric(client.Counter, {
+  name: "rate_limit_store_fallbacks_total",
+  help: "Rate-limit checks counted in process memory because Redis was unavailable",
+  labelNames: ["limiter"],
+});
+
 // Records the mount path of the router handling the request. Express resets
 // req.baseUrl when a router exits (e.g. after a handler calls next(err)), so
 // it can't be read reliably once the response has finished.
@@ -114,4 +131,7 @@ module.exports = {
   jobDuration,
   dbCommandDuration,
   dbCommandFailures,
+  cacheRequests,
+  redisErrors,
+  rateLimitStoreFallbacks,
 };

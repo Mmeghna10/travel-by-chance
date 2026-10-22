@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { invalidateListings } = require("../modules/cache/listingCache.js");
 const Schema = mongoose.Schema;
 const Review = require("./review.js");
 
@@ -60,6 +61,14 @@ listingSchema.post("findOneAndDelete", async(listing) => {
     await Review.deleteMany({_id: {$in: listing.reviews}});
   }
 })
+
+// Any change to listings (or to a listing's review list) makes cached listing
+// pages out of date. Hooks here, rather than calls in each controller, so no
+// write path (admin edits, reviews, seed scripts) can forget to invalidate.
+const invalidate = () => invalidateListings();
+listingSchema.post("save", invalidate);
+listingSchema.post("insertMany", invalidate);
+listingSchema.post(["findOneAndUpdate", "findOneAndDelete", "updateOne", "updateMany", "deleteOne", "deleteMany"], invalidate);
 
 const Listing = mongoose.model("Listing", listingSchema);
 module.exports = Listing;

@@ -59,13 +59,18 @@ function configurePayments({
     return;
   }
   validateKeys({ keyId, allowLive });
-  settings = keyId && keySecret ? { mode: "razorpay", keyId, keySecret, webhookSecret } : null;
+  settings = keyId && keySecret ? { mode: "razorpay", live: keyId.startsWith("rzp_live_"), keyId, keySecret, webhookSecret } : null;
   gateway = custom || (settings ? createRazorpayGateway(settings) : null);
 }
 
 /** "razorpay", "demo", or null when payments are off. */
 function paymentsMode() {
   return paymentsEnabled() ? settings.mode : null;
+}
+
+/** True only for Razorpay LIVE keys, i.e. real money moves. */
+function paymentsLive() {
+  return Boolean(paymentsEnabled() && settings.live);
 }
 
 function paymentsEnabled() {
@@ -82,4 +87,4 @@ function getGateway() {
   return gateway;
 }
 
-module.exports = { configurePayments, paymentsEnabled, paymentsMode, getSettings, getGateway, validateKeys, validateDemo };
+module.exports = { configurePayments, paymentsEnabled, paymentsMode, paymentsLive, getSettings, getGateway, validateKeys, validateDemo };

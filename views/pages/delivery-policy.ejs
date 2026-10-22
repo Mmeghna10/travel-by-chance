@@ -1,0 +1,15 @@
+<% layout('/layouts/boilerplate') %>
+<article class="policy-page">
+  <%- include("../includes/policyNav.ejs") %>
+
+  <p><%= business.name %> sells accommodation bookings, which are an online service. <strong>Nothing is shipped.</strong></p>
+
+  <h2>How your booking is delivered</h2>
+  <ul>
+    <li>As soon as your payment is verified, your booking is confirmed and appears as <em>Confirmed</em> in <a href="/bookings">My Bookings</a>. This normally takes a few seconds.</li>
+    <li>If confirmation is delayed (for example, your connection dropped right after paying), our system re-checks the payment with Razorpay automatically, usually within a couple of minutes. You don't need to pay again.</li>
+    <li>The service itself is the stay on the dates you booked, at the listed property.</li>
+  </ul>
+
+  <p>If a paid booking doesn't show as confirmed within 30 minutes, please <a href="/contact">contact us</a>. See also the <a href="/refund-policy">Cancellation &amp; Refund Policy</a>.</p>
+</article>

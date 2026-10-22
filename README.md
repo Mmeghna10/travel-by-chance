@@ -10,7 +10,7 @@ A travel-stays booking platform (in the style of Airbnb) built with **Node.js, E
 - **An explicit booking state machine:** unpaid holds expire automatically, and every transition is guarded and audited.
 - **Production practice:** Docker, structured logs with request IDs, Prometheus metrics, load testing, and a GitHub Actions pipeline that tests the real containers on every push.
 
-Everything above is backed by **114 automated tests** against a real MongoDB replica set, including concurrency races and mutation checks (safeguards deliberately broken to prove the tests catch it). How each piece was designed, measured and verified is in [`docs/`](#documentation).
+Everything above is backed by **140 automated tests** against a real MongoDB replica set, including concurrency races and mutation checks (safeguards deliberately broken to prove the tests catch it). How each piece was designed, measured and verified is in [`docs/`](#documentation).
 
 ---
 
@@ -32,6 +32,8 @@ Everything above is backed by **114 automated tests** against a real MongoDB rep
 | Payments | Razorpay orders, HMAC-verified checkout + API fetch, signed webhooks (raw body), dedupe, out-of-order handling, refund outbox with leases / retries / dead-letter, reconciliation job |
 | Security | Role-based access, object-level authorization (others' bookings return 404), XSS-safe rendering, CSP and security headers, rate limiting, regex/NoSQL-injection-safe queries, secrets only in the environment |
 | Observability | pino JSON logs with request IDs and redaction, Prometheus `/metrics` (latency per route, booking/payment/refund outcomes, MongoDB latency and write conflicts), error-reporting hook, health and readiness probes |
+| Caching & limits | Optional **Redis**: rate-limit counters shared by every web instance and a cache-aside listing cache with generation-based invalidation. Falls back to per-process limits and direct MongoDB reads when Redis is absent or down |
+| Going live | Contact, Terms, Privacy, Cancellation & Refund and Service Delivery pages (what Razorpay checks before activating live payments), describing the code's real behaviour; payment wording that never says "test" to real payers; live keys need explicit opt-in **and** real contact details |
 | Delivery | Multi-stage Dockerfile (non-root), Docker Compose (MongoDB replica set + app + worker), GitHub Actions CI (lint, tests, audit, Docker smoke test, graceful-shutdown check, image scan), publish to GHCR, deploy-by-digest |
 
 ## Architecture
@@ -49,6 +51,7 @@ flowchart LR
   end
   WRK[worker process · node worker.js<br/>hold expiry · refund queue · reconciliation]
   WEB --> DB[(MongoDB replica set<br/>source of truth)]
+  WEB -. optional .-> RD[(Redis<br/>rate-limit counters · listing cache)]
   WRK --> DB
   WEB --> EXT[Razorpay API · Cloudinary · Mapbox]
   WRK --> EXT
@@ -58,7 +61,7 @@ flowchart LR
 
 **Why a monolith?** The core correctness tool is a single database transaction that spans the booking, its inventory, the idempotency record and (for refunds) an outbox row. Split into services, that becomes a distributed saga with compensations, which is more failure modes for no benefit at this scale. The modules (`modules/bookings`, `modules/payments`, …) keep the boundaries clean in case a service ever needs splitting out, e.g. payments for compliance reasons.
 
-**Why no Redis or Kafka?** Inventory must live in the database that holds the bookings (a cache can't be the source of truth for money or rooms). Background jobs use MongoDB rows as a durable queue, with leases, retries and a dead-letter state. Redis becomes useful later as a shared rate-limit store once there are several web instances.
+**Where Redis fits (and where it doesn't).** Inventory, bookings and payments stay in MongoDB: a cache can't be the source of truth for money or rooms. Redis holds only things that are safe to lose: **rate-limit counters**, so a limit means the same with 1 or 10 web instances, and a **60-second listing cache** for the read-heavy browse page, landing page and search box. It's optional and fails safe: if Redis is missing or down, limits fall back to per-process memory (looser, never off) and pages read MongoDB directly. Background jobs still use MongoDB rows as a durable queue (leases, retries, dead-letter), so no BullMQ and no Kafka. Details: [docs/10](docs/10-redis-and-going-live.md).
 
 ## Booking and payment flow
 
@@ -186,6 +189,8 @@ All settings are environment variables; see [`.env.example`](.env.example) for t
 | `HTTPS_ONLY`, `TRUST_PROXY` | Production behind TLS: `true` and `1`. Must be `false` on plain `http://` or login silently fails |
 | `RUN_BACKGROUND_JOBS`, `JOB_INTERVAL_SECONDS` | Run expiry/refunds/reconciliation in the web process (default) or in `npm run worker` |
 | `METRICS_TOKEN`, `LOG_LEVEL`, `SLOW_QUERY_MS` | Observability |
+| `REDIS_URL` | Optional. Shared rate limits + listing cache (Compose sets it to the `redis` service) |
+| `BUSINESS_NAME`, `SUPPORT_EMAIL`, `SUPPORT_PHONE`, `BUSINESS_ADDRESS` | Shown on the Contact/policy pages and footer; **required** with live Razorpay keys |
 
 ## API
 
@@ -207,7 +212,7 @@ Errors are JSON `{ success: false, code, message }`. Every response carries `X-R
 ## Testing
 
 ```bash
-npm test        # 114 tests; starts a real in-memory MongoDB replica set per file
+npm test        # 140 tests (3 need Redis: TEST_REDIS_URL); starts a real in-memory MongoDB replica set per file
 npm run lint    # ESLint
 ```
 
@@ -237,7 +242,7 @@ One hypothesis (fail fast on sold-out nights) made no measurable difference, so 
 
 Every push runs GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
 
-**lint + 114 tests → dependency audit → Docker job** (build the production image, assert non-root and no secrets inside, run the tests inside the container, `compose up --wait`, smoke test, **graceful-shutdown check**, data persistence, Trivy scan) **→ (main only) publish to GHCR → deploy that exact image digest**.
+**lint + 140 tests (with a real Redis service) → dependency audit → Docker job** (build the production image, assert non-root and no secrets inside, run the tests inside the container, `compose up --wait`, smoke test, **graceful-shutdown check**, data persistence, Trivy scan) **→ (main only) publish to GHCR → deploy that exact image digest**.
 
 Actions are pinned to commit SHAs, and the workflow token is read-only by default. The deployment plan (Render + MongoDB Atlas, secrets, migrations, health checks, backups, rollback, scaling) is in [docs/08](docs/08-milestone-7-ci-cd.md).
 
@@ -251,11 +256,12 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 │   ├── bookings/             # pricing, dates, inventory, service, stateMachine, lifecycle
 │   ├── payments/             # gateway, signatures, service, webhooks, refunds, reconcile
 │   ├── observability/        # logger, metrics, db monitoring, error reporting
+│   ├── cache/                # optional Redis client, listing cache
 │   └── jobs/runner.js        # background job scheduler
 ├── models/                   # User, Listing, Review, Booking, InventoryNight, IdempotencyRecord, Payment, Refund, WebhookEvent
 ├── controllers/ routes/ views/ public/
 ├── init/                     # seed, create-admin, booking migration
-├── test/                     # 114 tests + Razorpay simulator
+├── test/                     # 140 tests + Razorpay simulator
 ├── load/                     # load baseline + k6 scripts
 ├── ci/smoke.js               # end-to-end smoke test used by CI
 ├── Dockerfile, compose*.yaml
@@ -266,11 +272,12 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 
 - **Razorpay:** tested against a simulator with real signatures, and Checkout loads in the browser, but a **live sandbox payment hasn't been run** (account onboarding needed KYC). See [docs/05](docs/05-milestone-4-payments.md#-pending-live-razorpay-sandbox-check).
 - **Not deployed yet:** the pipeline publishes and can deploy, but no production environment exists.
+- **Live payments** need a Razorpay account activated with your own KYC; the code side is ready ([docs/10](docs/10-redis-and-going-live.md#going-live-with-real-payments)). The policy pages are plain-language descriptions of the app's behaviour, not legal advice.
 - Full refunds only; no partial-refund policy; no admin screen for `REFUND_FAILED` bookings.
 - Changing booking dates isn't supported (cancel and rebook).
 - The Content-Security-Policy still allows inline scripts (the views use inline handlers).
 - `cloudinary@1` (required by `multer-storage-cloudinary@4`) has a known high advisory; our fixed upload parameters don't reach it, but the dependency should be replaced.
-- Rate limiting is per process; several web instances need a shared store (Redis).
+- The real-Redis tests (3) run in CI, which has Redis; locally they're skipped unless `TEST_REDIS_URL` is set. The fallback behaviour is tested everywhere.
 - Load numbers come from a single laptop; k6 scripts haven't been run.
 
 ## Documentation
@@ -286,6 +293,7 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 | [07 Observability](docs/07-milestone-6-observability.md) | Logs, metrics, load testing and findings |
 | [08 CI/CD](docs/08-milestone-7-ci-cd.md) | Pipeline, deployment plan |
 | [09 Interview prep](docs/09-interview-prep.md) | How to explain this project |
+| [10 Redis & going live](docs/10-redis-and-going-live.md) | Shared rate limits, listing cache, policy pages, live-payment checklist |
 
 ## License
 
