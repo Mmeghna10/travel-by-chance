@@ -23,31 +23,8 @@
       </div>
       <div class="mb-4">
         <label for="password" class="form-label-pro">Password</label>
-        <input name="password" id="password" type="password" class="form-control form-control-pro" placeholder="Create a strong password" required />
-        <div class="invalid-feedback">Please enter a password.</div>
-      </div>
-
-      <!-- Role Selector -->
-      <div class="mb-4">
-        <label class="form-label-pro">Register As</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.5rem;">
-          <label style="cursor:pointer;">
-            <input type="radio" name="role" value="customer" id="role-customer" class="visually-hidden" checked>
-            <div id="role-card-customer" style="border:2px solid var(--primary);border-radius:var(--radius-sm);padding:1.1rem 0.75rem;text-align:center;background:var(--primary-light);transition:all 0.22s;">
-              <i class="fa-solid fa-user" id="role-icon-customer" style="font-size:1.4rem;color:var(--primary);margin-bottom:0.5rem;display:block;"></i>
-              <div style="font-weight:700;font-size:0.88rem;color:var(--dark);">Customer</div>
-              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.15rem;">Browse & Book Stays</div>
-            </div>
-          </label>
-          <label style="cursor:pointer;">
-            <input type="radio" name="role" value="admin" id="role-admin" class="visually-hidden">
-            <div id="role-card-admin" style="border:2px solid var(--border-main);border-radius:var(--radius-sm);padding:1.1rem 0.75rem;text-align:center;background:white;transition:all 0.22s;">
-              <i class="fa-solid fa-house-laptop" id="role-icon-admin" style="font-size:1.4rem;color:var(--text-subtle);margin-bottom:0.5rem;display:block;"></i>
-              <div style="font-weight:700;font-size:0.88rem;color:var(--dark);">Host / Admin</div>
-              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.15rem;">Manage Listings</div>
-            </div>
-          </label>
-        </div>
+        <input name="password" id="password" type="password" class="form-control form-control-pro" placeholder="At least 8 characters" minlength="8" maxlength="128" required />
+        <div class="invalid-feedback">Password must be at least 8 characters.</div>
       </div>
 
       <button type="submit" class="btn-form-primary">
@@ -61,28 +38,3 @@
     </p>
   </div>
 </div>
-
-<script>
-  const customerRadio = document.getElementById('role-customer');
-  const adminRadio = document.getElementById('role-admin');
-
-  function updateRoleCards() {
-    if (customerRadio.checked) {
-      document.getElementById('role-card-customer').style.borderColor = 'var(--primary)';
-      document.getElementById('role-card-customer').style.background = 'var(--primary-light)';
-      document.getElementById('role-icon-customer').style.color = 'var(--primary)';
-      document.getElementById('role-card-admin').style.borderColor = 'var(--border-main)';
-      document.getElementById('role-card-admin').style.background = 'white';
-      document.getElementById('role-icon-admin').style.color = 'var(--text-subtle)';
-    } else {
-      document.getElementById('role-card-admin').style.borderColor = 'var(--primary)';
-      document.getElementById('role-card-admin').style.background = 'var(--primary-light)';
-      document.getElementById('role-icon-admin').style.color = 'var(--primary)';
-      document.getElementById('role-card-customer').style.borderColor = 'var(--border-main)';
-      document.getElementById('role-card-customer').style.background = 'white';
-      document.getElementById('role-icon-customer').style.color = 'var(--text-subtle)';
-    }
-  }
-  customerRadio.addEventListener('change', updateRoleCards);
-  adminRadio.addEventListener('change', updateRoleCards);
-</script>

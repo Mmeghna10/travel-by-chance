@@ -39,8 +39,11 @@
                 alt="<%= booking.listing.title %>"
                 onmouseover="this.style.transform='scale(1.04)';"
                 onmouseout="this.style.transform='';">
-              <span style="position: absolute; top: 12px; right: 12px; background: var(--success); color: white; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.85rem; border-radius: var(--radius-pill);">
-                <i class="fa-solid fa-check me-1"></i>Confirmed
+              <% const st = booking.status || "CONFIRMED"; const stLabel = st.replace("_", " ").toLowerCase();
+                 const stColor = { CONFIRMED: "var(--success)", PENDING_PAYMENT: "var(--amber-dark, #b7791f)", REFUND_PENDING: "var(--amber-dark, #b7791f)" }[st] || "var(--text-muted)";
+                 const canCancel = ["CONFIRMED", "PENDING_PAYMENT"].includes(st) && booking.checkIn > today; %>
+              <span style="position: absolute; top: 12px; right: 12px; background: <%= stColor %>; color: white; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.85rem; border-radius: var(--radius-pill); text-transform: capitalize;">
+                <i class="fa-solid <%= st === "CONFIRMED" ? "fa-check" : "fa-circle-info" %> me-1"></i><%= stLabel %>
               </span>
             </div>
 
@@ -59,21 +62,42 @@
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                   <span style="color: var(--text-muted); font-weight: 600;"><i class="fa-solid fa-plane-arrival me-1"></i> Check-in</span>
                   <span style="font-weight: 700; color: var(--dark);">
-                    <%= booking.checkIn.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                    <%= booking.checkIn.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) %>
                   </span>
                 </div>
                 <div style="display: flex; justify-content: space-between;">
                   <span style="color: var(--text-muted); font-weight: 600;"><i class="fa-solid fa-plane-departure me-1"></i> Check-out</span>
                   <span style="font-weight: 700; color: var(--dark);">
-                    <%= booking.checkOut.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                    <%= booking.checkOut.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) %>
                   </span>
                 </div>
               </div>
 
+              <% if (st === "PENDING_PAYMENT" && booking.expiresAt) { %>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin: -0.25rem 0 1rem;">
+                  <i class="fa-regular fa-clock me-1"></i>Held until <%= booking.expiresAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" }) %> IST, then released if unpaid
+                </p>
+              <% } %>
+              <% if (st === "PENDING_PAYMENT" && paymentsEnabled && booking.expiresAt > new Date()) { %>
+                <button type="button" onclick="payForBooking('<%= booking._id %>', (m) => { this.textContent = m; })" style="width: 100%; padding: 0.55rem; margin-bottom: 0.6rem; border: none; border-radius: var(--radius-pill); background: var(--primary); color: white; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+                  <i class="fa-solid fa-lock me-1"></i>Pay <%= formatPaise(booking.amountPaise) %> now
+                </button>
+              <% } %>
+              <% if (st === "REFUND_PENDING") { %>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin: -0.25rem 0 1rem;"><i class="fa-solid fa-rotate-left me-1"></i>Refund requested. It will show as refunded once Razorpay confirms it.</p>
+              <% } %>
+              <% if (canCancel) { %>
+                <form method="POST" action="/bookings/<%= booking._id %>/cancel" onsubmit="return confirm('Cancel this booking? The dates will be released.');" style="margin-bottom: 1rem;">
+                  <button type="submit" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-main); border-radius: var(--radius-pill); background: white; font-size: 0.82rem; font-weight: 700; color: var(--danger); cursor: pointer;">
+                    <i class="fa-solid fa-xmark me-1"></i>Cancel booking
+                  </button>
+                </form>
+              <% } %>
+
               <!-- Price + Link -->
               <div style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--border-light);">
                 <div>
-                  <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Total Paid</div>
+                  <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;">Total</div>
                   <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary);">₹<%= booking.totalPrice.toLocaleString("en-IN") %></div>
                 </div>
                 <a href="/listings/<%= booking.listing._id %>"
@@ -92,3 +116,8 @@
 <% } %>
 
 <div style="margin-bottom: 3rem;"></div>
+
+<% if (paymentsEnabled) { %>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/js/payments.js"></script>
+<% } %>

@@ -1,0 +1,111 @@
+# Local stack: MongoDB (single-node replica set) + web app + background worker.
+#
+#   docker compose up --build -d      # build and start everything
+#   docker compose ps                 # status + health
+#   docker compose logs -f app        # follow logs
+#   docker compose down               # stop (data is kept in the mongo-data volume)
+#
+# This is for local development and demos. It is NOT a production
+# orchestrator: one machine, no TLS, no automatic failover. See
+# docs/06-milestone-5-docker.md for how production differs.
+
+name: travelbychance
+
+services:
+  mongo:
+    # MongoDB 7.0, not 8.x: MongoDB 8.0+ refuses to start on Linux kernel 6.19+
+    # (SERVER-121912, a tcmalloc/rseq incompatibility). GitHub's runners already
+    # use such kernels (seen: 7.0.0-azure), and 8.0.34 and 8.3.13 both exit
+    # there. 7.0 has everything this app needs (replica sets, transactions).
+    # Revisit once MongoDB ships 8.x builds that support these kernels.
+    image: mongo:7.0.45-jammy
+    # Transactions (used for every booking) need a replica set, even one with
+    # a single member. A plain standalone mongod would reject them.
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      # Only on the host's loopback, so you can connect with Compass at
+      # mongodb://localhost:27017/?directConnection=true. Not exposed to your network.
+      - "127.0.0.1:27017:27017"
+    healthcheck:
+      # Initialises the replica set on first start (idempotent) and reports
+      # healthy ONLY once this node is PRIMARY (myState 1), so dependent services
+      # can write (build indexes) the moment they start. mongosh exits 0 even if
+      # the script just returns a value, so the checks quit(1) explicitly: an
+      # earlier version reported healthy before any primary was elected.
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { if (rs.status().myState !== 1) quit(1) } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }); quit(1) }"
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      target: prod
+    # Secrets (SECRET, Cloudinary, Mapbox, Razorpay) come from your .env at
+    # RUNTIME. They are never copied into the image (see .dockerignore).
+    # Optional so CI can pass variables through the shell instead.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Overrides for the container network (these win over .env):
+      PORT: "8080" # must match the published port below, whatever .env says
+      # Fail at "docker compose up" with a clear message instead of a crash loop.
+      SECRET: ${SECRET:?Set SECRET in .env (any long random string)}
+      ATLASDB_URL: mongodb://mongo:27017/travelbychance?replicaSet=rs0
+      DNS_SERVERS: "" # Docker's own DNS must resolve "mongo"; don't override it
+      HTTPS_ONLY: "false" # plain http://localhost here; true behind a TLS proxy in production
+      RUN_BACKGROUND_JOBS: "false" # the worker service runs them
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    # tini as PID 1: forwards signals to node and reaps zombie processes.
+    init: true
+    # docker stop sends SIGTERM, waits this long, then SIGKILL. server.js
+    # finishes in-flight requests within 10s, so this leaves headroom.
+    stop_grace_period: 15s
+    restart: unless-stopped
+
+  worker:
+    # Same Dockerfile target as app. Built separately (fully cached, so it's
+    # instant) rather than sharing a tag, which Compose might try to pull.
+    build:
+      context: .
+      target: prod
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: ["node", "worker.js"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      ATLASDB_URL: mongodb://mongo:27017/travelbychance?replicaSet=rs0
+      DNS_SERVERS: ""
+      SECRET: ${SECRET:?Set SECRET in .env (any long random string)}
+    # The worker serves /healthz and /metrics on port 9464 (internal only).
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9464/healthz').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    init: true
+    stop_grace_period: 15s
+    restart: unless-stopped
+
+volumes:
+  # Named volume: survives `docker compose down` and image rebuilds.
+  # Removed only by `docker compose down -v`.
+  mongo-data:

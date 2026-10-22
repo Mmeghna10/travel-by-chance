@@ -1,7 +1,8 @@
 <% layout('/layouts/boilerplate') %>
 <script>
-  const mapToken = "<%= process.env.MAP_TOKEN %>";
-  const listing = <%- JSON.stringify(listing) %>;
+  const mapToken = <%- safeJson(mapToken || "") %>;
+  // Only what map.js needs, escaped for a <script> context (see utils/safeJson.js).
+  const listing = <%- safeJson({ title: listing.title, geometry: listing.geometry }) %>;
 </script>
 
 <!-- Breadcrumb -->
@@ -36,7 +37,7 @@
       </div>
     </div>
     <div style="display: flex; gap: 0.75rem; flex-shrink: 0;">
-      <button onclick="navigator.share ? navigator.share({title: '<%= listing.title %>', url: window.location.href}) : navigator.clipboard.writeText(window.location.href)"
+      <button onclick="navigator.share ? navigator.share({title: listing.title, url: window.location.href}) : navigator.clipboard.writeText(window.location.href)"
         style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1rem; border: 1px solid var(--border-main); border-radius: var(--radius-pill); background: white; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.22s;"
         onmouseover="this.style.borderColor='var(--dark)';" onmouseout="this.style.borderColor='var(--border-main)';">
         <i class="fa-solid fa-share-nodes"></i> Share
@@ -239,24 +240,24 @@
         <a class="btn-reserve-action" href="/login" style="text-decoration: none; line-height: 1.6;">Log in to Reserve</a>
       <% } %>
 
-      <p style="text-align: center; font-size: 0.8rem; color: var(--text-subtle); margin-top: 0.85rem;">You won't be charged yet</p>
+      <p id="availability-msg" role="status" style="text-align: center; font-size: 0.85rem; font-weight: 600; margin-top: 0.85rem; min-height: 1.2em;"></p>
 
       <div style="border-top: 1px solid var(--border-light); margin: 1.25rem 0; padding-top: 1.25rem;">
         <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-          <span>₹<%= listing.price.toLocaleString("en-IN") %> × <span id="nights-count">1</span> night</span>
-          <span id="subtotal">₹<%= listing.price.toLocaleString("en-IN") %></span>
+          <span><%= formatPaise(oneNightQuote.nightlyPaise) %> × <span id="nights-count">1</span> <span id="nights-label">night</span></span>
+          <span id="subtotal"><%= formatPaise(oneNightQuote.subtotalPaise) %></span>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">
           <span>Cleaning fee</span>
-          <span>₹<%= Math.round(listing.price * 0.05).toLocaleString("en-IN") %></span>
+          <span id="cleaning-fee"><%= formatPaise(oneNightQuote.cleaningFeePaise) %></span>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">
           <span>Service fee</span>
-          <span>₹<%= Math.round(listing.price * 0.12).toLocaleString("en-IN") %></span>
+          <span id="service-fee"><%= formatPaise(oneNightQuote.serviceFeePaise) %></span>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 800; color: var(--dark); border-top: 1px solid var(--border-light); padding-top: 0.75rem; margin-top: 0.5rem;">
           <span>Total before taxes</span>
-          <span id="total-price">₹<%= Math.round(listing.price * 1.17).toLocaleString("en-IN") %></span>
+          <span id="total-price"><%= formatPaise(oneNightQuote.totalPaise) %></span>
         </div>
       </div>
 
@@ -303,10 +304,10 @@
           </div>
         </div>
         <button class="btn-reserve-action" id="confirm-booking-btn" onclick="confirmBooking()" style="font-size: 0.95rem;">
-          <i class="fa-solid fa-check me-2"></i>Request to Book
+          <% if (paymentsEnabled) { %><i class="fa-solid fa-lock me-2"></i>Continue to payment<% } else { %><i class="fa-solid fa-check me-2"></i>Request to Book<% } %>
         </button>
         <p style="text-align: center; font-size: 0.8rem; color: var(--text-subtle); margin-top: 0.85rem;">
-          Host will contact you to confirm · No charge until confirmed
+          <% if (paymentsEnabled) { %>Your dates are held for a few minutes while you pay · Test mode, no real money<% } else { %>Instant confirmation · Online payment is not enabled yet<% } %>
         </p>
       </div>
     </div>
@@ -314,83 +315,130 @@
 </div>
 
 <script src="/js/map.js"></script>
+<% if (paymentsEnabled) { %>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/js/payments.js"></script>
+<% } %>
 <script>
-const pricePerNight = <%= listing.price %>;
+// All prices come from the server (GET /api/v1/listings/:id/quote); this page
+// only displays them. Booking correctness never depends on anything here.
+const listingId = <%- safeJson(String(listing._id)) %>;
 const checkinEl = document.getElementById('checkin-date');
 const checkoutEl = document.getElementById('checkout-date');
-const nightsEl = document.getElementById('nights-count');
-const subtotalEl = document.getElementById('subtotal');
-const totalEl = document.getElementById('total-price');
+const availabilityEl = document.getElementById('availability-msg');
 
-const today = new Date().toISOString().split('T')[0];
-if (checkinEl) checkinEl.min = today;
-if (checkoutEl) checkoutEl.min = today;
+let currentQuote = null;
+// One key per logical booking attempt. Retrying the same attempt (double click,
+// timeout, network error) reuses it, so the server returns the original result
+// instead of creating a second booking. Changing the dates starts a new attempt.
+let idempotencyKey = null;
 
-function updatePrice() {
-  if (!checkinEl.value || !checkoutEl.value) return;
-  const d1 = new Date(checkinEl.value), d2 = new Date(checkoutEl.value);
-  if (d2 <= d1) { checkoutEl.setCustomValidity('Check-out must be after check-in'); return; }
-  checkoutEl.setCustomValidity('');
-  const nights = Math.max(1, Math.round((d2 - d1) / (1000 * 60 * 60 * 24)));
-  const sub = pricePerNight * nights;
-  const clean = Math.round(pricePerNight * 0.05);
-  const service = Math.round(pricePerNight * 0.12);
-  const total = sub + clean + service;
-  if (nightsEl) nightsEl.textContent = nights;
-  if (subtotalEl) subtotalEl.textContent = '₹' + sub.toLocaleString('en-IN');
-  if (totalEl) totalEl.textContent = '₹' + total.toLocaleString('en-IN');
+const todayLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+if (checkinEl) checkinEl.min = todayLocal;
+if (checkoutEl) checkoutEl.min = todayLocal;
+
+function newIdempotencyKey() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-if (checkinEl) checkinEl.addEventListener('change', () => { checkoutEl.min = checkinEl.value; updatePrice(); });
-if (checkoutEl) checkoutEl.addEventListener('change', updatePrice);
+function rupees(paise) {
+  return '₹' + (paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+function setAvailability(text, ok) {
+  availabilityEl.textContent = text;
+  availabilityEl.style.color = ok ? 'var(--success)' : 'var(--danger)';
+}
+
+async function refreshQuote() {
+  currentQuote = null;
+  idempotencyKey = null;
+  if (!checkinEl.value || !checkoutEl.value) return;
+  if (checkoutEl.value <= checkinEl.value) {
+    checkoutEl.setCustomValidity('Check-out must be after check-in');
+    setAvailability('Check-out must be after check-in.', false);
+    return;
+  }
+  checkoutEl.setCustomValidity('');
+  const params = new URLSearchParams({ checkIn: checkinEl.value, checkOut: checkoutEl.value });
+  try {
+    const res = await fetch('/api/v1/listings/' + listingId + '/quote?' + params, { headers: { Accept: 'application/json' } });
+    const data = await res.json();
+    if (!res.ok) { setAvailability(data.message || 'Could not price these dates.', false); return; }
+    const q = data.quote;
+    document.getElementById('nights-count').textContent = q.nights;
+    document.getElementById('nights-label').textContent = q.nights === 1 ? 'night' : 'nights';
+    document.getElementById('subtotal').textContent = rupees(q.subtotalPaise);
+    document.getElementById('cleaning-fee').textContent = rupees(q.cleaningFeePaise);
+    document.getElementById('service-fee').textContent = rupees(q.serviceFeePaise);
+    document.getElementById('total-price').textContent = rupees(q.totalPaise);
+    currentQuote = data;
+    setAvailability(data.available ? 'Available for these dates' : 'Not available for these dates', data.available);
+  } catch (e) {
+    setAvailability('Could not check availability. Please try again.', false);
+  }
+}
+
+if (checkinEl) checkinEl.addEventListener('change', () => { checkoutEl.min = checkinEl.value; refreshQuote(); });
+if (checkoutEl) checkoutEl.addEventListener('change', refreshQuote);
 
 function openBookingModal() {
-  const checkin = checkinEl ? checkinEl.value : '';
-  const checkout = checkoutEl ? checkoutEl.value : '';
-  if (!checkin || !checkout) {
+  if (!checkinEl.value || !checkoutEl.value) {
     alert('Please select check-in and check-out dates before reserving.');
     return;
   }
-  const d1 = new Date(checkin), d2 = new Date(checkout);
-  const nights = (d2 > d1) ? Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) : 1;
-  const total = Math.round(pricePerNight * nights * 1.17);
-  document.getElementById('modal-checkin').textContent = checkin;
-  document.getElementById('modal-checkout').textContent = checkout;
-  document.getElementById('modal-total').textContent = '₹' + total.toLocaleString('en-IN');
+  if (!currentQuote) { refreshQuote(); return; }
+  if (!currentQuote.available) { alert('These dates are not available. Please choose other dates.'); return; }
+  idempotencyKey = idempotencyKey || newIdempotencyKey();
+  document.getElementById('modal-checkin').textContent = currentQuote.checkIn;
+  document.getElementById('modal-checkout').textContent = currentQuote.checkOut;
+  document.getElementById('modal-total').textContent = rupees(currentQuote.quote.totalPaise);
   new bootstrap.Modal(document.getElementById('bookingModal')).show();
 }
 
 async function confirmBooking() {
-  const checkin = checkinEl ? checkinEl.value : '';
-  const checkout = checkoutEl ? checkoutEl.value : '';
-  if (!checkin || !checkout) { alert('Please select dates.'); return; }
+  if (!currentQuote || !idempotencyKey) return;
   const btn = document.getElementById('confirm-booking-btn');
   const orig = btn.innerHTML;
-  btn.disabled = true;
+  btn.disabled = true; // UX only: the Idempotency-Key is what actually prevents duplicates
   btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Processing...';
   try {
-    const res = await fetch('/bookings', {
+    const res = await fetch('/api/v1/bookings', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ listingId: "<%= listing._id %>", checkIn: checkin, checkOut: checkout })
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'Idempotency-Key': idempotencyKey },
+      body: JSON.stringify({ listingId, checkIn: currentQuote.checkIn, checkOut: currentQuote.checkOut }),
     });
     const result = await res.json();
-    if (result.success) {
+    if (res.ok && result.success) {
+      if (result.booking.status === 'PENDING_PAYMENT' && window.payForBooking) {
+        // Dates are held; now collect payment. Confirmation happens server-side.
+        bootstrap.Modal.getInstance(document.getElementById('bookingModal')).hide();
+        btn.innerHTML = orig;
+        btn.disabled = false;
+        payForBooking(result.booking.id, (msg) => setAvailability(msg, !/failed|not completed/i.test(msg)));
+        return;
+      }
       btn.innerHTML = '<i class="fa-solid fa-check me-2"></i>Booking Confirmed!';
       btn.style.background = 'var(--success)';
-      setTimeout(() => {
-        bootstrap.Modal.getInstance(document.getElementById('bookingModal')).hide();
-        window.location.href = '/bookings';
-      }, 2000);
-    } else {
-      btn.innerHTML = orig;
-      btn.disabled = false;
-      alert(result.message || 'Booking failed. Please try again.');
+      setTimeout(() => { window.location.href = '/bookings'; }, 1500);
+      return;
     }
-  } catch (e) {
     btn.innerHTML = orig;
     btn.disabled = false;
-    alert('An error occurred. Please try again.');
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    if (result.code === 'SOLD_OUT') {
+      bootstrap.Modal.getInstance(document.getElementById('bookingModal')).hide();
+      await refreshQuote();
+    }
+    alert(result.message || 'Booking failed. Please try again.');
+  } catch (e) {
+    // Network error: the booking may or may not exist. Keeping the same key
+    // makes pressing the button again safe.
+    btn.innerHTML = orig;
+    btn.disabled = false;
+    alert('Network error. Please try again. You will not be booked twice.');
   }
 }
 </script>

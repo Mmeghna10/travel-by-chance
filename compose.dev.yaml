@@ -1,0 +1,25 @@
+# Development override: live reload with your source mounted into the container.
+#
+#   docker compose -f compose.yaml -f compose.dev.yaml up --build
+#
+# Edits on your machine restart the server inside the container (nodemon).
+
+services:
+  app:
+    build:
+      target: dev
+    environment:
+      NODE_ENV: development
+      # In dev the web process also runs the background jobs; no separate worker.
+      RUN_BACKGROUND_JOBS: "true"
+    volumes:
+      - .:/app
+      # Keep the container's own node_modules (built for Linux) instead of
+      # the one from your Windows folder, which the bind mount would hide it with.
+      - /app/node_modules
+    healthcheck:
+      disable: true
+
+  worker:
+    # The dev app runs the jobs itself; keep the worker out of the dev stack.
+    profiles: ["worker"]

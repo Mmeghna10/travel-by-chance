@@ -1,13 +1,4 @@
-const dns = require('dns');
-try {
-  dns.setServers(['8.8.8.8', '8.8.4.4']);
-} catch (e) {
-  console.warn("Could not set DNS servers:", e);
-}
-
-if (process.env.NODE_ENV != "production") {
-  require('dotenv').config();
-}
+require("../config/env.js"); // loads .env and optional DNS_SERVERS
 
 const mongoose = require("mongoose");
 const initData = require("./data.js");

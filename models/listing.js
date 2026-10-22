@@ -14,6 +14,16 @@ const listingSchema = new Schema({
     filename: String,
   },
   price: Number,
+  // How many identical units can be booked for the same night (1 for a whole
+  // villa, e.g. 6 for a hostel dorm). Listings created before this field
+  // existed get the default when loaded.
+  units: {
+    type: Number,
+    default: 1,
+    min: 1,
+    max: 100,
+    validate: { validator: Number.isInteger, message: "units must be a whole number" },
+  },
   location: String,
   country: String,
   reviews:[

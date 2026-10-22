@@ -7,10 +7,10 @@ module.exports.dashboard = async (req, res) => {
   const bookingsCount = await Booking.countDocuments();
   const usersCount = await User.countDocuments();
 
-  const listings = await Listing.find({}).populate("owner");
+  const listings = await Listing.find({}).populate("owner", "username");
   const bookings = await Booking.find({})
     .populate("listing")
-    .populate("user")
+    .populate("user", "username")
     .sort({ createdAt: -1 });
 
   res.render("admin/dashboard.ejs", {
