@@ -36,6 +36,15 @@ jobs:
     name: Lint and test
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    # A real Redis for test/redis.integration.test.js (skipped without one).
+    services:
+      redis:
+        image: redis:7.4.10-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -112,7 +121,7 @@ jobs:
           docker compose ps
 
       - name: Smoke test against the running containers
-        run: node ci/smoke.js http://localhost:8080
+        run: node ci/smoke.js http://localhost:8080 --expect-redis
 
       - name: Graceful shutdown on SIGTERM (app and worker)
         run: |
@@ -142,7 +151,7 @@ jobs:
           SECRET="${SECRET:-cleanup}" docker compose logs --no-color --tail 200 || true
           # Also publish container status + recent logs as a check annotation:
           # annotations show on the PR / run page without opening the raw log.
-          diag=$( { SECRET="${SECRET:-cleanup}" docker compose ps -a; for s in mongo app worker; do echo "--- $s"; SECRET="${SECRET:-cleanup}" docker compose logs --no-color --tail 25 "$s"; done; } 2>&1 | tail -c 12000 )
+          diag=$( { SECRET="${SECRET:-cleanup}" docker compose ps -a; for s in mongo redis app worker; do echo "--- $s"; SECRET="${SECRET:-cleanup}" docker compose logs --no-color --tail 25 "$s"; done; } 2>&1 | tail -c 12000 )
           diag="${diag//'%'/'%25'}"; diag="${diag//$'\r'/}"; diag="${diag//$'\n'/'%0A'}"
           echo "::error title=Compose diagnostics::${diag}"
 

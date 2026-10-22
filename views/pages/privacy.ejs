@@ -1,0 +1,32 @@
+<% layout('/layouts/boilerplate') %>
+<article class="policy-page">
+  <%- include("../includes/policyNav.ejs") %>
+
+  <p>This policy explains what personal data <%= business.name %> collects, why, and who it is shared with.</p>
+
+  <h2>1. What we collect</h2>
+  <ul>
+    <li><strong>Account details:</strong> your username and email address. Your password is stored only as a salted hash; nobody (including us) can read it.</li>
+    <li><strong>Bookings:</strong> the stay, dates, amount and status of each booking you make.</li>
+    <li><strong>Payments:</strong> the amount, status and Razorpay's reference numbers. We <strong>do not</strong> receive or store card numbers, CVVs, UPI PINs or bank passwords. Those go directly to Razorpay.</li>
+    <li><strong>Reviews</strong> you post, shown publicly with your username.</li>
+    <li><strong>Technical logs:</strong> request details such as IP address and the pages requested, used to keep the service secure and working (for example, to limit repeated login attempts).</li>
+  </ul>
+
+  <h2>2. Cookies</h2>
+  <p>We use one essential cookie, <code>tbc.sid</code>, to keep you logged in. It is only set when you log in, sign up or perform an action that needs a session. We don't use advertising or analytics cookies.</p>
+
+  <h2>3. Who we share data with</h2>
+  <ul>
+    <li><strong>Razorpay</strong>, to process payments and refunds.</li>
+    <li><strong>Hosting and infrastructure providers</strong> that run the site and its database.</li>
+    <li><strong>Mapbox</strong>, which serves the maps on listing pages (your browser requests map images from it), and <strong>Cloudinary</strong>, which hosts listing photos.</li>
+  </ul>
+  <p>We don't sell your data.</p>
+
+  <h2>4. How long we keep it</h2>
+  <p>Account data is kept while your account exists. Booking and payment records are kept as long as needed for accounting, refunds and legal obligations.</p>
+
+  <h2>5. Your choices</h2>
+  <p>You can ask us to correct or delete your account data by <a href="/contact">contacting us</a>. Some booking and payment records may need to be kept for legal or accounting reasons.</p>
+</article>

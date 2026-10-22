@@ -23,7 +23,6 @@ const safeJson = require("./utils/safeJson.js");
 const { createAuthLimiter, createBookingLimiter } = require("./middleware/rateLimits.js");
 const { formatPaise } = require("./modules/bookings/pricing.js");
 const User = require("./models/user.js");
-const Listing = require("./models/listing.js");
 
 const listingRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
@@ -32,9 +31,11 @@ const bookingRouter = require("./routes/bookings.js");
 const adminRouter = require("./routes/admin.js");
 const apiRouter = require("./routes/api.js");
 const healthRouter = require("./routes/health.js");
+const pagesRouter = require("./routes/pages.js");
 const listingController = require("./controllers/listings.js");
 const paymentController = require("./controllers/payments.js");
-const { paymentsEnabled, paymentsMode } = require("./modules/payments/gateway.js");
+const { paymentsEnabled, paymentsMode, paymentsLive } = require("./modules/payments/gateway.js");
+const { cachedListings } = require("./modules/cache/listingCache.js");
 
 /**
  * @param {object} options
@@ -44,8 +45,9 @@ const { paymentsEnabled, paymentsMode } = require("./modules/payments/gateway.js
  * @param {object}  [options.rateLimit]   overrides, e.g. { authMax: 5 }
  * @param {object}  [options.bookings]    { requirePayment, holdMinutes }
  * @param {string}  [options.metricsToken] if set, GET /metrics requires "Authorization: Bearer <token>"
+ * @param {object}  [options.business]    { name, email, phone, address } for the contact/policy pages
  */
-function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit = {}, bookings = {}, metricsToken }) {
+function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit = {}, bookings = {}, metricsToken, business = {} }) {
   const app = express();
 
   if (trustProxy) app.set("trust proxy", trustProxy);
@@ -56,6 +58,7 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   app.locals.formatPaise = formatPaise;
   app.locals.mapToken = process.env.MAP_TOKEN;
   app.set("bookingOptions", bookings);
+  app.locals.business = { name: "TravelByChance", email: "", phone: "", address: "", ...business };
 
   // Observability first, so every request (even ones rejected early) gets a
   // request ID, an access-log line and a latency measurement.
@@ -194,14 +197,14 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
     res.locals.currUser = req.user;
     res.locals.paymentsEnabled = paymentsEnabled();
     res.locals.paymentsMode = paymentsMode(); // "razorpay" | "demo" | null
+    res.locals.paymentsLive = paymentsLive(); // real money (Razorpay live keys)
     res.locals.searchQuery = req.query.q || "";
     res.locals.category = req.query.category || "";
     next();
   });
 
-  // Limiters are created per app so each instance (and each test) has its own
-  // counters. The default store is in-memory, i.e. per process; with several
-  // instances behind a load balancer this moves to a shared (Redis) store.
+  // Counters live in Redis when REDIS_URL is set, so limits are shared by all
+  // instances; otherwise (or while Redis is down) in this process's memory.
   app.use(["/login", "/signup"], createAuthLimiter(rateLimit.authMax));
   app.use("/api/v1/bookings", createBookingLimiter(rateLimit.bookingMax));
 
@@ -212,6 +215,7 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   app.use("/admin", routeBase("/admin"), adminRouter);
   app.use("/api/v1", routeBase("/api/v1"), apiRouter);
   app.use("/", routeBase(""), userRouter);
+  app.use("/", routeBase(""), pagesRouter);
 
   // Real-time autocomplete API
   app.get("/api/search-suggestions", wrapAsync(listingController.searchSuggestions));
@@ -220,14 +224,8 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   app.get(
     "/",
     wrapAsync(async (req, res) => {
-      const featuredListings = await Listing.find({}).limit(3).populate("reviews");
-      const listingsWithRatings = featuredListings.map((listing) => {
-        const ratings = listing.reviews.map((r) => r.rating).filter((r) => typeof r === "number");
-        const avg = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : 0;
-        listing.averageRating = avg;
-        return listing;
-      });
-      res.render("landing.ejs", { featuredListings: listingsWithRatings });
+      const featuredListings = await cachedListings("featured", {}, () => listingController.loadListingCards({}, 3));
+      res.render("landing.ejs", { featuredListings });
     }),
   );
 

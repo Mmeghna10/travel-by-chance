@@ -307,7 +307,8 @@
           <% if (paymentsEnabled) { %><i class="fa-solid fa-lock me-2"></i>Continue to payment<% } else { %><i class="fa-solid fa-check me-2"></i>Request to Book<% } %>
         </button>
         <p style="text-align: center; font-size: 0.8rem; color: var(--text-subtle); margin-top: 0.85rem;">
-          <% if (paymentsMode === "demo") { %><strong style="color:#b45309;">DEMO payment</strong> · simulated, no real money · dates held for a few minutes while you pay<% } else if (paymentsEnabled) { %>Your dates are held for a few minutes while you pay · Test mode, no real money<% } else { %>Instant confirmation · Online payment is not enabled yet<% } %>
+          <% if (paymentsMode === "demo") { %><strong style="color:#b45309;">DEMO payment</strong> · simulated, no real money · dates held for a few minutes while you pay<% } else if (paymentsLive) { %>Secure payment by Razorpay · your dates are held for a few minutes while you pay<% } else if (paymentsEnabled) { %>Your dates are held for a few minutes while you pay · Test mode, no real money<% } else { %>Instant confirmation · Online payment is not enabled yet<% } %>
+          <% if (paymentsEnabled) { %><br />By continuing you agree to our <a href="/terms" target="_blank">Terms</a> and <a href="/refund-policy" target="_blank">Cancellation &amp; Refund Policy</a>.<% } %>
         </p>
       </div>
     </div>

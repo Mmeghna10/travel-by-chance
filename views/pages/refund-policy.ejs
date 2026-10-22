@@ -1,0 +1,34 @@
+<% layout('/layouts/boilerplate') %>
+<article class="policy-page">
+  <%- include("../includes/policyNav.ejs") %>
+
+  <p>This policy explains what happens to your money when a booking on <%= business.name %> is cancelled, expires or can't go ahead. All amounts are in Indian Rupees (INR).</p>
+
+  <h2>1. Holding your dates while you pay</h2>
+  <p>When you click <strong>Reserve</strong>, we hold your dates for <%= holdMinutes %> minutes so nobody else can book them while you complete payment. If you don't pay within that time, the hold ends automatically, the dates become available again, and <strong>you are not charged</strong>.</p>
+
+  <h2>2. Cancelling a booking</h2>
+  <ul>
+    <li>You can cancel from <a href="/bookings">My Bookings</a> at any time <strong>before your check-in date</strong>.</li>
+    <li>If you hadn't paid yet, the booking is simply cancelled. Nothing is charged.</li>
+    <li>If you had paid, you receive a <strong>full refund of the amount paid</strong>, including the cleaning and service fees. No cancellation fee is deducted.</li>
+    <li>From the check-in date onwards, a booking can no longer be cancelled online. If something went wrong with your stay, please <a href="/contact">contact us</a>.</li>
+  </ul>
+
+  <h2>3. Automatic refunds</h2>
+  <p>You are refunded in full, without needing to ask, if:</p>
+  <ul>
+    <li>your payment reached us after your hold had expired and the dates had meanwhile been booked by someone else; or</li>
+    <li>a payment was received for a booking you had already cancelled.</li>
+  </ul>
+
+  <h2>4. How and when refunds arrive</h2>
+  <ul>
+    <li>Refunds go back to the <strong>original payment method</strong> (card, UPI, net banking or wallet) through our payment partner, Razorpay. We can't refund to a different account.</li>
+    <li>We submit the refund immediately. Banks usually take <strong>5–7 working days</strong> to show it in your account.</li>
+    <li>Your booking shows <em>Refund pending</em> until our payment partner confirms the refund, then <em>Refunded</em>. We only mark a refund as complete once it is confirmed.</li>
+  </ul>
+
+  <h2>5. Questions or problems</h2>
+  <p>If a refund hasn't arrived after 7 working days, or you were charged twice, write to us with your booking details and we'll look into it. See <a href="/contact">Contact us</a>.</p>
+</article>

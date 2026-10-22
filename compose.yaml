@@ -1,4 +1,4 @@
-# Local stack: MongoDB (single-node replica set) + web app + background worker.
+# Local stack: MongoDB (single-node replica set) + Redis + web app + background worker.
 #
 #   docker compose up --build -d      # build and start everything
 #   docker compose ps                 # status + health
@@ -46,6 +46,22 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  redis:
+    # Cache + shared rate-limit counters only; nothing here needs to survive
+    # a restart, so persistence is off. Pinned to a release that has been out
+    # for a while rather than the newest tag.
+    image: redis:7.4.10-alpine
+    # 64 MB cap; when full, evict the least-recently-used keys that have a TTL
+    # (all cache entries and rate-limit counters do). The cache generation key
+    # has no TTL, so it's never evicted.
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "volatile-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   app:
     build:
       context: .
@@ -65,8 +81,13 @@ services:
       DNS_SERVERS: "" # Docker's own DNS must resolve "mongo"; don't override it
       HTTPS_ONLY: "false" # plain http://localhost here; true behind a TLS proxy in production
       RUN_BACKGROUND_JOBS: "false" # the worker service runs them
+      REDIS_URL: redis://redis:6379
     depends_on:
       mongo:
+        condition: service_healthy
+      # The app also starts (and keeps working) without Redis; waiting just
+      # means the cache and shared limits are on from the first request.
+      redis:
         condition: service_healthy
     ports:
       - "8080:8080"

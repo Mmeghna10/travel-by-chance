@@ -4,6 +4,7 @@ const escapeRegex = require("../utils/escapeRegex.js");
 const Booking = require("../models/booking.js");
 const InventoryNight = require("../models/inventoryNight.js");
 const { quote } = require("../modules/bookings/pricing.js");
+const { cachedListings } = require("../modules/cache/listingCache.js");
 const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding');
 const mapToken = process.env.MAP_TOKEN;
 const geocodingClient = mbxGeocoding({ accessToken: mapToken });
@@ -18,12 +19,31 @@ async function geocode(location) {
 }
 
 
+function averageRating(reviews) {
+  const ratings = reviews.map((r) => r.rating).filter((r) => typeof r === "number");
+  return ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : 0;
+}
+
+// Listing cards for the browse and landing pages, as plain JSON so they can
+// be cached (modules/cache/listingCache.js). Only the fields the cards show.
+async function loadListingCards(filter, limit = 0) {
+  const listings = await Listing.find(filter)
+    .select("title image price location country category reviews")
+    .populate("reviews", "rating")
+    .limit(limit)
+    .lean();
+  // Round-trip through JSON so a cache miss renders exactly like a cache hit.
+  return JSON.parse(JSON.stringify(listings.map((l) => ({ ...l, averageRating: averageRating(l.reviews) }))));
+}
+module.exports.loadListingCards = loadListingCards;
+
 module.exports.index = async (req, res) => {
   let { q, category } = req.query;
   let filter = {};
+  const search = typeof q === "string" ? q.trim().slice(0, MAX_QUERY_LENGTH) : "";
 
-  if (typeof q === "string" && q.trim()) {
-    const pattern = escapeRegex(q.trim().slice(0, MAX_QUERY_LENGTH));
+  if (search) {
+    const pattern = escapeRegex(search);
     filter.$or = [
       { title: { $regex: pattern, $options: "i" } },
       { location: { $regex: pattern, $options: "i" } },
@@ -37,22 +57,17 @@ module.exports.index = async (req, res) => {
     filter.category = category;
   }
 
-  const allListings = await Listing.find(filter).populate('reviews');
+  const allListings = await cachedListings("browse", { search, category: filter.category || "" }, () =>
+    loadListingCards(filter),
+  );
 
   if (allListings.length === 0 && (q || category)) {
     req.flash("error", `No stays found${q ? ` for "${q}"` : ""}${category ? ` in ${category}` : ""}. Try a different search!`);
     return res.redirect("/listings");
   }
 
-  // Compute average rating for each listing
-  const listingsWithRatings = allListings.map(listing => {
-    const ratings = listing.reviews.map(r => r.rating).filter(r => typeof r === 'number');
-    const avg = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : 0;
-    listing.averageRating = avg;
-    return listing;
-  });
   res.render("listings/index.ejs", {
-    allListings: listingsWithRatings,
+    allListings,
     searchQuery: q || "",
     category: category || "",
   });
@@ -168,16 +183,22 @@ module.exports.searchSuggestions = async (req, res) => {
   const { q } = req.query;
   if (typeof q !== "string" || q.trim().length < 2) return res.json([]);
 
-  const pattern = escapeRegex(q.trim().slice(0, MAX_QUERY_LENGTH));
-  const suggestions = await Listing.find({
-    $or: [
-      { title: { $regex: pattern, $options: "i" } },
-      { location: { $regex: pattern, $options: "i" } },
-      { country: { $regex: pattern, $options: "i" } },
-    ],
-  })
-    .select("title location country _id")
-    .limit(8);
+  const search = q.trim().slice(0, MAX_QUERY_LENGTH);
+  // Fired on every keystroke in the navbar, so it's the hottest read: cache it.
+  const suggestions = await cachedListings("suggest", { search: search.toLowerCase() }, async () => {
+    const pattern = escapeRegex(search);
+    const found = await Listing.find({
+      $or: [
+        { title: { $regex: pattern, $options: "i" } },
+        { location: { $regex: pattern, $options: "i" } },
+        { country: { $regex: pattern, $options: "i" } },
+      ],
+    })
+      .select("title location country _id")
+      .limit(8)
+      .lean();
+    return JSON.parse(JSON.stringify(found));
+  });
 
   res.json(suggestions);
 };

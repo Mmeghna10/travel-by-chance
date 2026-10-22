@@ -1,4 +1,5 @@
 const { rateLimit, ipKeyGenerator } = require("express-rate-limit");
+const { RedisWithMemoryFallback } = require("./rateLimitStore.js");
 
 const onlyPosts = (req) => req.method !== "POST";
 
@@ -8,6 +9,8 @@ module.exports.createAuthLimiter = (limit = 10) =>
     windowMs: 15 * 60 * 1000,
     limit,
     skip: onlyPosts,
+    // Shared across instances via Redis when available (see rateLimitStore.js).
+    store: new RedisWithMemoryFallback("auth"),
     standardHeaders: "draft-8",
     legacyHeaders: false,
     handler: (req, res) => {
@@ -21,6 +24,7 @@ module.exports.createBookingLimiter = (limit = 20) =>
     windowMs: 60 * 1000,
     limit,
     skip: onlyPosts,
+    store: new RedisWithMemoryFallback("booking"),
     standardHeaders: "draft-8",
     legacyHeaders: false,
     keyGenerator: (req) => (req.user ? `user:${req.user._id}` : ipKeyGenerator(req.ip)),

@@ -1201,3 +1201,19 @@ img { max-width: 100%; display: block; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-up { animation: fadeInUp 0.5s var(--ease-out) both; }
+
+/* ─── Policy & contact pages ─── */
+.policy-page { max-width: 760px; margin: 2rem auto 4rem; color: var(--text, #2b2118); line-height: 1.7; font-size: 0.97rem; }
+.policy-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+.policy-nav a { padding: 0.35rem 0.85rem; border: 1px solid var(--primary-border); border-radius: 999px; font-size: 0.82rem; font-weight: 600; color: var(--primary-dark); text-decoration: none; }
+.policy-nav a:hover { background: var(--primary-light); }
+.policy-title { font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 600; margin-bottom: 0.25rem; }
+.policy-updated { color: var(--text-subtle, #8a7f74); font-size: 0.85rem; margin-bottom: 1.75rem; }
+.policy-page h2 { font-size: 1.1rem; font-weight: 800; margin: 1.75rem 0 0.5rem; }
+.policy-page ul { padding-left: 1.25rem; }
+.policy-page li { margin-bottom: 0.4rem; }
+.policy-page a { color: var(--primary); }
+.policy-contact { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.25rem; padding: 1.25rem; border: 1px solid var(--primary-border); border-radius: 12px; background: var(--primary-light); }
+.policy-contact dt { font-weight: 700; }
+.policy-contact dd { margin: 0; word-break: break-word; }
+.policy-note { padding: 0.85rem 1rem; border-radius: 10px; background: #fef3c7; color: #92400e; font-weight: 600; }

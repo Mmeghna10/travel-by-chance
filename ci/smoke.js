@@ -35,7 +35,9 @@ async function login() {
     const health = await fetch(`${BASE}/healthz`);
     check("GET /healthz", health.status === 200);
     const ready = await fetch(`${BASE}/readyz`);
-    check("GET /readyz (MongoDB reachable)", ready.status === 200, JSON.stringify(await ready.json()));
+    const readyBody = await ready.json();
+    check("GET /readyz (MongoDB reachable)", ready.status === 200, JSON.stringify(readyBody));
+    if (process.argv.includes("--expect-redis")) check("Redis connected", readyBody.redis === "ok", `redis: ${readyBody.redis}`);
     check("X-Request-Id header", Boolean(health.headers.get("x-request-id")));
     check("security headers", Boolean(health.headers.get("content-security-policy") || (await fetch(`${BASE}/listings`)).headers.get("content-security-policy")));
 
