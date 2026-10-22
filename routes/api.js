@@ -12,5 +12,6 @@ router.get("/bookings/:id", isLoggedIn, wrapAsync(bookingController.showBooking)
 router.post("/bookings/:id/cancel", isLoggedIn, wrapAsync(bookingController.cancelBookingApi));
 router.post("/bookings/:id/payment-order", isLoggedIn, wrapAsync(paymentController.createOrder));
 router.post("/payments/verify", isLoggedIn, wrapAsync(paymentController.verify));
+router.post("/demo-payments/:orderId/pay", isLoggedIn, wrapAsync(paymentController.demoPay));
 
 module.exports = router;

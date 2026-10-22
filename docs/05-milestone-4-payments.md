@@ -160,6 +160,16 @@ What this means:
 - **Not verified:** a real test-mode payment captured by Razorpay, a real webhook delivery, and a real refund. The response and webhook payload shapes the code relies on come from Razorpay's documentation, not from observed traffic.
 - **To close this:** obtain test keys (§7 steps 1–3), then run a test-card payment, a failed payment and retry, and a cancellation → refund, and record the results here.
 
+## 8b. Demo payment mode (added later)
+
+Because the live Razorpay sandbox was blocked by KYC, there's a **demo mode** (`DEMO_PAYMENTS=true`) to show the whole flow without a Razorpay account:
+
+- `modules/payments/demoGateway.js` implements the **same gateway interface** as Razorpay. Its "provider-side" orders, payments and refunds are stored in MongoDB (collection `demogatewayrecords`), so the web process and the worker share them and they survive restarts.
+- The browser shows a window labelled **"DEMO PAYMENT · NO REAL MONEY · NO REAL GATEWAY"** with four choices: pay (success), card declined, pay then close the window, cancel. `POST /api/v1/demo-payments/:orderId/pay` (owner only) plays the customer's side and returns a checkout response **signed exactly like Razorpay's**.
+- Everything after that is the **real code**: `/payments/verify` checks the HMAC signature and that the payment is captured for the right amount, the booking is confirmed by a guarded transition, "pay then close" is recovered by the reconciliation job, and cancelling a paid booking goes through the refund outbox and worker.
+- **Guards:** off by default; refused if Razorpay keys are also set; refused with `NODE_ENV=production` unless `ALLOW_DEMO_PAYMENTS_IN_PRODUCTION=true` (e.g. for a public portfolio demo); the demo endpoint returns 404 in any other mode; Razorpay's script isn't loaded in demo mode.
+- Tests: `test/demoPayments.test.js` (9), including a tampered demo signature being rejected by the real verification path. Verified in the browser: decline → retry → pay → **Confirmed**; cancel → **refund pending** → **Refunded** about 15 s later via the background worker.
+
 ## 9. Known limitations
 - Full refunds only; no partial-refund or cancellation-fee policy.
 - `REFUND_FAILED` and payment anomalies (wrong amount, second capture on one order) are recorded and logged, but there's no admin screen or alerting yet (Milestone 6 adds metrics).

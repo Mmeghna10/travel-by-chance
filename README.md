@@ -170,7 +170,7 @@ docker compose ps         # all services "healthy"
 ```
 More Docker commands, dev mode and troubleshooting: [docs/06](docs/06-milestone-5-docker.md).
 
-**Payments:** add Razorpay **test** keys (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`) and bookings switch to "hold, then pay". Without them, bookings confirm instantly. Test cards and webhook setup: [docs/05](docs/05-milestone-4-payments.md#7-sandbox-testing-no-real-money).
+**Payments:** add Razorpay **test** keys (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`) and bookings switch to "hold, then pay". Test cards and webhook setup: [docs/05](docs/05-milestone-4-payments.md#7-sandbox-testing-no-real-money). **No Razorpay account?** Set `DEMO_PAYMENTS=true` for a clearly-labelled **demo payment window** (simulated gateway, no real money) that runs the same server-side payment code: pay, decline, "pay then close the tab" (recovered by reconciliation), and refunds on cancel. Without either, bookings confirm instantly.
 
 ## Configuration
 
@@ -181,6 +181,7 @@ All settings are environment variables; see [`.env.example`](.env.example) for t
 | `ATLASDB_URL`, `SECRET` | **Required.** MongoDB URI (replica set) and session secret. The server refuses to start without them |
 | `MAP_TOKEN`, `CLOUD_NAME`, `CLOUD_API_KEY`, `CLOUD_API_SECRET` | Maps and image upload |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Payments (test keys only, unless `ALLOW_LIVE_PAYMENTS=true`) |
+| `DEMO_PAYMENTS` | `true` = simulated, clearly-labelled payment gateway for demos (refused in production unless `ALLOW_DEMO_PAYMENTS_IN_PRODUCTION=true`) |
 | `BOOKING_HOLD_MINUTES`, `REQUIRE_PAYMENT` | Hold length (15) and whether bookings wait for payment (defaults to on when keys are set) |
 | `HTTPS_ONLY`, `TRUST_PROXY` | Production behind TLS: `true` and `1`. Must be `false` on plain `http://` or login silently fails |
 | `RUN_BACKGROUND_JOBS`, `JOB_INTERVAL_SECONDS` | Run expiry/refunds/reconciliation in the web process (default) or in `npm run worker` |

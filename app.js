@@ -34,7 +34,7 @@ const apiRouter = require("./routes/api.js");
 const healthRouter = require("./routes/health.js");
 const listingController = require("./controllers/listings.js");
 const paymentController = require("./controllers/payments.js");
-const { paymentsEnabled } = require("./modules/payments/gateway.js");
+const { paymentsEnabled, paymentsMode } = require("./modules/payments/gateway.js");
 
 /**
  * @param {object} options
@@ -193,6 +193,7 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
     if (hasFlash && Object.keys(req.session.flash).length === 0) delete req.session.flash;
     res.locals.currUser = req.user;
     res.locals.paymentsEnabled = paymentsEnabled();
+    res.locals.paymentsMode = paymentsMode(); // "razorpay" | "demo" | null
     res.locals.searchQuery = req.query.q || "";
     res.locals.category = req.query.category || "";
     next();

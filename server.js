@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const { createApp } = require("./app.js");
 const { ensureIndexes } = require("./modules/bookings/service.js");
 const { startBackgroundJobs } = require("./modules/jobs/runner.js");
-const { configurePayments, paymentsEnabled } = require("./modules/payments/gateway.js");
+const { configurePayments, paymentsEnabled, paymentsMode } = require("./modules/payments/gateway.js");
 const { logger } = require("./modules/observability/logger.js");
 const { installProcessHandlers, reportError } = require("./modules/observability/errors.js");
 const { instrumentMongo } = require("./modules/observability/db.js");
@@ -16,9 +16,14 @@ async function start() {
   assertRequired();
   configurePayments(config.payments); // throws on live keys unless explicitly allowed
   if (config.bookings.requirePayment && !paymentsEnabled()) {
-    throw new Error("REQUIRE_PAYMENT=true needs RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET; bookings could never be paid.");
+    throw new Error("REQUIRE_PAYMENT=true needs Razorpay keys (or DEMO_PAYMENTS=true); bookings could never be paid.");
   }
-  logger.info({ payments: paymentsEnabled() ? "razorpay-test" : "disabled" }, paymentsEnabled() ? "payments: Razorpay (test mode)" : "payments: disabled (bookings confirm instantly)");
+  const mode = paymentsMode();
+  const describe = {
+    razorpay: "payments: Razorpay (test mode)",
+    demo: "payments: DEMO mode (simulated gateway, no real money)",
+  };
+  logger.info({ payments: mode || "disabled" }, describe[mode] || "payments: disabled (bookings confirm instantly)");
 
   // Fail fast: don't accept traffic we can't serve.
   // monitorCommands: emit per-command events for query metrics / slow-query logs.

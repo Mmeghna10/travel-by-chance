@@ -307,7 +307,7 @@
           <% if (paymentsEnabled) { %><i class="fa-solid fa-lock me-2"></i>Continue to payment<% } else { %><i class="fa-solid fa-check me-2"></i>Request to Book<% } %>
         </button>
         <p style="text-align: center; font-size: 0.8rem; color: var(--text-subtle); margin-top: 0.85rem;">
-          <% if (paymentsEnabled) { %>Your dates are held for a few minutes while you pay · Test mode, no real money<% } else { %>Instant confirmation · Online payment is not enabled yet<% } %>
+          <% if (paymentsMode === "demo") { %><strong style="color:#b45309;">DEMO payment</strong> · simulated, no real money · dates held for a few minutes while you pay<% } else if (paymentsEnabled) { %>Your dates are held for a few minutes while you pay · Test mode, no real money<% } else { %>Instant confirmation · Online payment is not enabled yet<% } %>
         </p>
       </div>
     </div>
@@ -316,7 +316,7 @@
 
 <script src="/js/map.js"></script>
 <% if (paymentsEnabled) { %>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<% if (paymentsMode === "razorpay") { %><script src="https://checkout.razorpay.com/v1/checkout.js"></script><% } %>
 <script src="/js/payments.js"></script>
 <% } %>
 <script>

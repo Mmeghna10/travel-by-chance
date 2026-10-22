@@ -40,6 +40,11 @@ const config = {
     // reconciliation catches up on payments without it.
     webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET,
     allowLive: process.env.ALLOW_LIVE_PAYMENTS === "true",
+    // Simulated gateway: shows the full flow without Razorpay, no real money.
+    demo: process.env.DEMO_PAYMENTS === "true",
+    demoSecret: process.env.SECRET,
+    isProduction: process.env.NODE_ENV === "production",
+    allowDemoInProduction: process.env.ALLOW_DEMO_PAYMENTS_IN_PRODUCTION === "true",
   },
   bookings: {
     // When true, new bookings start as PENDING_PAYMENT and hold their nights
@@ -47,7 +52,7 @@ const config = {
     requirePayment:
       process.env.REQUIRE_PAYMENT !== undefined
         ? process.env.REQUIRE_PAYMENT === "true"
-        : Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+        : Boolean((process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) || process.env.DEMO_PAYMENTS === "true"),
     holdMinutes: Number(process.env.BOOKING_HOLD_MINUTES) || 15,
   },
   // Run background jobs (hold expiry, refunds, reconciliation) inside each
