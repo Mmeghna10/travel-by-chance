@@ -41,7 +41,9 @@
                 onmouseout="this.style.transform='';">
               <% const st = booking.status || "CONFIRMED"; const stLabel = st.replace("_", " ").toLowerCase();
                  const stColor = { CONFIRMED: "var(--success)", PENDING_PAYMENT: "var(--amber-dark, #b7791f)", REFUND_PENDING: "var(--amber-dark, #b7791f)" }[st] || "var(--text-muted)";
-                 const canCancel = ["CONFIRMED", "PENDING_PAYMENT"].includes(st) && booking.checkIn > today; %>
+                 // booking.status (not st): pre-upgrade bookings have no status and can't
+                 // be cancelled until `npm run migrate:bookings` has run.
+                 const canCancel = ["CONFIRMED", "PENDING_PAYMENT"].includes(booking.status) && booking.checkIn > today; %>
               <span style="position: absolute; top: 12px; right: 12px; background: <%= stColor %>; color: white; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.85rem; border-radius: var(--radius-pill); text-transform: capitalize;">
                 <i class="fa-solid <%= st === "CONFIRMED" ? "fa-check" : "fa-circle-info" %> me-1"></i><%= stLabel %>
               </span>
@@ -80,11 +82,11 @@
               <% } %>
               <% if (st === "PENDING_PAYMENT" && paymentsEnabled && booking.expiresAt > new Date()) { %>
                 <button type="button" onclick="payForBooking('<%= booking._id %>', (m) => { this.textContent = m; })" style="width: 100%; padding: 0.55rem; margin-bottom: 0.6rem; border: none; border-radius: var(--radius-pill); background: var(--primary); color: white; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
-                  <i class="fa-solid fa-lock me-1"></i>Pay <%= formatPaise(booking.amountPaise) %> now
+                  <i class="fa-solid fa-lock me-1"></i>Pay <%= formatPaise(booking.amountPaise) %> now<% if (paymentsMode === "demo") { %> (demo)<% } %>
                 </button>
               <% } %>
               <% if (st === "REFUND_PENDING") { %>
-                <p style="font-size: 0.82rem; color: var(--text-muted); margin: -0.25rem 0 1rem;"><i class="fa-solid fa-rotate-left me-1"></i>Refund requested. It will show as refunded once Razorpay confirms it.</p>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin: -0.25rem 0 1rem;"><i class="fa-solid fa-rotate-left me-1"></i>Refund requested. It will show as refunded once the payment provider confirms it.</p>
               <% } %>
               <% if (canCancel) { %>
                 <form method="POST" action="/bookings/<%= booking._id %>/cancel" onsubmit="return confirm('Cancel this booking? The dates will be released.');" style="margin-bottom: 1rem;">
@@ -118,6 +120,6 @@
 <div style="margin-bottom: 3rem;"></div>
 
 <% if (paymentsEnabled) { %>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<% if (paymentsMode === "razorpay") { %><script src="https://checkout.razorpay.com/v1/checkout.js"></script><% } %>
 <script src="/js/payments.js"></script>
 <% } %>

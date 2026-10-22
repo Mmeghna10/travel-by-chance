@@ -268,3 +268,17 @@ test("a transition based on a stale status is refused and has no side effects", 
   assert.equal(await statusOf(id), "CONFIRMED");
   assert.equal(await reservedOn(h.day(10)), 1, "inventory not released for a confirmed booking");
 });
+
+test("My Bookings offers no Cancel button for pre-upgrade bookings (no status)", async () => {
+  const { insertedId } = await Booking.collection.insertOne({
+    listing: listing._id,
+    user: guest._id,
+    checkIn: parseDay(h.day(20)),
+    checkOut: parseDay(h.day(21)),
+    totalPrice: 1000,
+    createdAt: new Date(),
+  });
+  const page = await agent.get("/bookings");
+  assert.equal(page.status, 200);
+  assert.ok(!page.text.includes(`/bookings/${insertedId}/cancel`), "no cancel action that would only fail");
+});
