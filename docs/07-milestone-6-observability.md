@@ -71,7 +71,7 @@ Tests passed, but looking at real log lines and `/metrics` output showed two mor
   - **bursts:** 200 users at the same instant, on 200 different listings (control), on one listing's **last unit**, and on a 3-unit listing.
 
   Afterwards it checks **correctness in the database** and reads the server's own `/metrics` (WriteConflicts, CPU, database time per command).
-- **k6 scripts** (`load/k6/browse.js`, `load/k6/booking-burst.js`) for running with k6, with thresholds that fail the run on high latency, errors or **any oversold booking**. ⚠️ k6 isn't installed on this machine, so these were only syntax-checked, never run.
+- **k6 scripts** (`load/k6/browse.js`, `load/k6/booking-burst.js`) with thresholds that fail the run on high latency, errors or **any oversold booking**. k6 wasn't installed on this machine, so they were first run later, in CI; see §8. That run found a bug in the script itself and corrected Finding 3.
 - **Rate limits** are per IP, and every virtual user comes from `127.0.0.1`. The load test raises them (`RATE_LIMIT_AUTH_MAX`, `RATE_LIMIT_BOOKING_MAX`), otherwise it would only measure the limiter.
 - **Machine:** i7-12650H (16 threads), 15.6 GB RAM, Windows 11, Node 22.23.2. Load generator, app and mongod all share this laptop, so these are **local baselines for comparing changes, not production capacity**.
 
@@ -99,7 +99,7 @@ Bursts were slow: p50 ≈ 3.5 s for 200 users on the last unit, with ≈ 780 `Wr
 
 **Result: no change** (p50 3,504 → 3,527 ms; WriteConflicts 790 → 783). In a burst, all 200 requests pass the check before the first one commits. **The change was reverted**: keeping an optimisation the measurements don't support only adds complexity.
 
-### Finding 3: bursts are bound by database throughput, not contention
+### Finding 3: bursts are bound by database throughput, not contention (⚠️ corrected in §8: the real bottleneck was Node CPU)
 A control burst where every user books a **different** listing (nothing shared) was *as slow or slower* than the contended bursts:
 
 | Burst of 200 simultaneous bookings | p50 run A | p50 run B |
@@ -156,7 +156,7 @@ k6 run -e LISTING_ID=<id> -e UNITS=1 -e USERS=200 load/k6/booking-burst.js
 - Mutation checks: removing redaction fails the password test; removing the request-ID mixin fails the correlation tests; restoring the old route-label logic fails the label test.
 
 ## 7. Not verified / limitations
-- **k6 scripts not executed** (k6 not installed); only syntax-checked.
+- ~~k6 scripts not executed~~: they now run in CI ([§8](#8-k6-in-ci-and-a-correction-to-finding-3)).
 - No Prometheus server or Grafana dashboards are set up; `/metrics` is ready to be scraped.
 - Load numbers are from one laptop with everything co-located (see §4).
 - `booking_transitions_total` counts a transition when it's applied inside a transaction. A transaction attempt that's rolled back and retried by the driver can be counted twice.
@@ -164,3 +164,53 @@ k6 run -e LISTING_ID=<id> -e UNITS=1 -e USERS=200 load/k6/booking-burst.js
 ## Files
 - **New:** `modules/observability/{logger,metrics,db,errors}.js`, `load/baseline.js`, `load/k6/{browse,booking-burst}.js`, `test/observability.test.js`, `docs/07-milestone-6-observability.md`.
 - **Changed:** `app.js` (request context, access log, metrics, `/metrics`, error reporting, **flash fix**, router mount labels), `server.js` / `worker.js` (logger, process handlers, DB monitoring, worker metrics server), `config/env.js` (`METRICS_TOKEN`, `RATE_LIMIT_*`), `modules/bookings/{service,stateMachine,lifecycle}.js`, `modules/payments/{service,webhooks,refunds,reconcile}.js`, `modules/jobs/runner.js` (metrics + logs instead of `console`), `compose.yaml` (worker health check), `test/{helpers,listings}.js`, `package.json` (`pino`, `pino-http`, `prom-client`; dev: `pino-pretty`; script `load:baseline`), `.env.example`, `README.md`.
+
+## 8. k6 in CI, and a correction to Finding 3
+
+After Milestone 8, the k6 scripts finally ran. They run in [`.github/workflows/load-test.yml`](../.github/workflows/load-test.yml) against the **production image** in the Compose stack (MongoDB replica set, Redis, app, worker) on a GitHub runner. That workflow runs on demand and on PRs that touch `load/`.
+
+### 8.1 The first run "passed" for the wrong reason
+200 users raced for a one-unit listing and exactly 1 booking was made, so the oversell threshold passed. But **199 of the 200 requests returned 401**: those users weren't logged in.
+
+**Cause:** `setup()` signed all 200 users up through one cookie jar. Each signup sent the previous user's cookie, and logging in replaces that session. Only the last user was still logged in, so **only one user actually competed**.
+
+**Fixes in the script:**
+- Clear the jar after each signup.
+- New thresholds: exactly `USERS - UNITS` requests must get *409 sold out*, and **zero** may get any other status.
+
+**Lesson:** a correctness check that passes *trivially* when the setup is broken isn't a check. It also needs to prove the contention really happened.
+
+### 8.2 Where the burst's time really went
+With real contention, the burst was slow: booking p50 **2.6 s**, p95 **4.6 s**, yet there were only **7 write conflicts**. Before changing anything, `booking-burst.js` was given a server-side breakdown: it reads the app's `/metrics` at the end of `setup()` and in `teardown()`, so the numbers cover only the burst.
+- **Node CPU:** **5.65 s in 4.8 s** of wall time, i.e. saturated for the whole burst. That's about 28 ms of CPU per booking request.
+- **Event-loop delay:** up to **149 ms**.
+- **MongoDB commands:** about 26 ms on average, but measured *by the driver*, so the figure includes waiting for the busy event loop to read each reply.
+
+A **CPU profile** of the same burst, reproduced locally (4.8 s wall, 5.5 s CPU), put **2.7 s of 4.96 s (55%) in `pbkdf2Sync`**:
+- connect-mongo's optional session encryption (`crypto: { secret }`) derives a key with **15,000 rounds of SHA-512, synchronously on the event loop**.
+- It does so on **every session read and every session write**, about 7 ms each.
+
+The encryption only hid the session's contents (a username and flash messages). The session id is stored in the clear either way, and cookies stay signed with `SECRET`. So it was turned off (`app.js`).
+- **Old sessions:** sessions saved while encryption was on are treated as logged out and deleted, instead of crashing express-session. `test/sessions.test.js`, mutation-checked: without that handling the request is a 500.
+
+| 200-user burst on 1 unit (GitHub runner, production image) | Before | After |
+|---|---|---|
+| booking p50 / p95 | 2,605 / 4,582 ms | **837 / 1,349 ms** (−68% / −71%) |
+| server: wall time · Node CPU | 4.8 s · 5.65 s | **1.5 s · 2.29 s** |
+| event-loop delay max / p99 | 149 / 83 ms | **41 / 28 ms** |
+| avg MongoDB command, as seen by the driver | ~26 ms | **~7 ms** (no database change) |
+| outcome (created / sold out / other) | 1 / 199 / 0 | **1 / 199 / 0**, database check PASS |
+
+Browse (20 VUs, 60 s, with the Redis cache): p95 **12–16 ms** for list, detail and quote; 0 errors; about 59 req/s, which is bounded by the script's 1 s think time, not the server.
+
+### 8.3 What this corrects
+Finding 3 (§4) concluded "the database is the bottleneck, not Node", based on MongoDB commands averaging 20–50 ms. **That was wrong**, for two reasons:
+- **Driver-side timings include event-loop queueing.** When Node is busy, "the database is slow" and "Node hasn't got round to reading the reply" look identical from inside the process.
+- **Node's own CPU figure was averaged over the whole two-minute run,** which hid saturation during the bursts.
+
+The local runs had the session encryption too, so their burst numbers were inflated by the same cost. The general lesson, now in the interview notes:
+- Confirm a bottleneck with a measurement that **can't be confounded**: a CPU profile, or event-loop delay over the same window.
+- Read per-component latency carefully when it's measured from inside a busy process.
+
+### 8.4 Running it
+GitHub → **Actions** → **Load test (k6)** → **Run workflow** (optional: number of burst users). The job summary shows the results table, and the log shows the `SERVER` breakdown lines.

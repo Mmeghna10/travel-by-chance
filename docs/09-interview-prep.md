@@ -148,6 +148,16 @@ Everything here describes what is **actually in the code and was actually measur
 
 **A real story from this project:** the load test showed 2–4 s bursts and ~780 write conflicts, so contention looked like the culprit. My fail-fast fix changed nothing, and a no-contention control was equally slow. The database metrics showed `find` averaging 38 ms (queueing) with Node mostly idle: the database was the bottleneck. The same investigation found a real bug: every anonymous page view wrote a session to MongoDB because of how flash messages were read. Fixing it took browse throughput from **103.7 to 381.5 req/s** (p95 248 → 70 ms).
 
+**…and the follow-up, where I was wrong.** Later, k6 ran in CI with a server-side breakdown of each burst.
+- **The symptom:** Node used 5.65 s of CPU in 4.8 s, i.e. it was saturated, and the event loop stalled up to 149 ms.
+- **The cause:** a CPU profile showed **55% of the time in `pbkdf2Sync`**. The session store's optional encryption derived a key synchronously on every session read and write.
+- **Why I misread it before:** my "slow database" numbers were measured from inside a busy Node process, so they included the time waiting for the event loop.
+- **The fix:** turn off the encryption. It only hid a username; the session id is stored in the clear anyway.
+- **Result:** burst p95 **4.6 s → 1.35 s**, and the database averages dropped from ~26 to ~7 ms *without touching the database*.
+- **Lesson:** confirm a bottleneck with a measurement that can't be confounded, like a CPU profile or event-loop delay over the same window.
+
+The same CI run also caught a broken test setup: 199 of 200 "racers" weren't logged in, so the oversell check had passed trivially. Now the test also requires that every other user really got "sold out".
+
 ---
 
 ## 3. Stories for "tell me about a bug / a time you were wrong"

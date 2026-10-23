@@ -12,7 +12,7 @@ A travel-stays booking platform (in the style of Airbnb) built with **Node.js, E
 - **An explicit booking state machine:** unpaid holds expire automatically, and every transition is guarded and audited.
 - **Production practice:** Docker, structured logs with request IDs, Prometheus metrics, load testing, and a GitHub Actions pipeline that tests the real containers on every push.
 
-Everything above is backed by **153 automated tests** against a real MongoDB replica set, including concurrency races and mutation checks (safeguards deliberately broken to prove the tests catch it). How each piece was designed, measured and verified is in [`docs/`](#documentation).
+Everything above is backed by **156 automated tests** against a real MongoDB replica set, including concurrency races and mutation checks (safeguards deliberately broken to prove the tests catch it). How each piece was designed, measured and verified is in [`docs/`](#documentation).
 
 ---
 
@@ -32,7 +32,7 @@ Everything above is backed by **153 automated tests** against a real MongoDB rep
 | Booking correctness | Per-night inventory, atomic conditional updates inside MongoDB transactions, idempotency keys, strict date validation, integer-paise pricing |
 | Lifecycle | State machine (`PENDING_PAYMENT → CONFIRMED / EXPIRED / CANCELLED → REFUND_PENDING → REFUNDED`), guarded transitions with an audit trail, expiry worker |
 | Payments | Razorpay orders, HMAC-verified checkout + API fetch, signed webhooks (raw body), dedupe, out-of-order handling, refund outbox with leases / retries / dead-letter, reconciliation job |
-| Security | Role-based access, object-level authorization (others' bookings return 404), XSS-safe rendering, CSP and security headers, rate limiting, regex/NoSQL-injection-safe queries, secrets only in the environment |
+| Security | Role-based access, object-level authorization (others' bookings return 404), XSS-safe rendering, CSP and security headers, rate limiting (shared via Redis), regex/NoSQL-injection-safe queries, image uploads limited to PNG/JPEG ≤ 5 MB, no CORS (same-origin only), `npm audit` clean for production dependencies, secrets only in the environment |
 | Observability | pino JSON logs with request IDs and redaction, Prometheus `/metrics` (latency per route, booking/payment/refund outcomes, MongoDB latency and write conflicts), error-reporting hook, health and readiness probes |
 | Caching & limits | Optional **Redis**: rate-limit counters shared by every web instance and a cache-aside listing cache with generation-based invalidation. Falls back to per-process limits and direct MongoDB reads when Redis is absent or down |
 | Going live | Contact, Terms, Privacy, Cancellation & Refund and Service Delivery pages (what Razorpay checks before activating live payments), describing the code's real behaviour; payment wording that never says "test" to real payers; live keys need explicit opt-in **and** real contact details |
@@ -222,7 +222,7 @@ Errors are JSON `{ success: false, code, message }`. Every response carries `X-R
 ## Testing
 
 ```bash
-npm test        # 153 tests (3 need Redis: TEST_REDIS_URL); starts a real in-memory MongoDB replica set per file
+npm test        # 156 tests (3 need Redis: TEST_REDIS_URL); starts a real in-memory MongoDB replica set per file
 npm run lint    # ESLint
 ```
 
@@ -236,7 +236,7 @@ npm run lint    # ESLint
 
 ## Load testing
 
-`npm run load:baseline` runs the real server in production mode against a MongoDB replica set, then **checks booking correctness in the database** after the load. k6 scripts with correctness thresholds are in `load/k6/` (not yet run; k6 wasn't installed).
+`npm run load:baseline` runs the real server in production mode against a MongoDB replica set, then **checks booking correctness in the database** after the load. The k6 scripts in `load/k6/` run in CI ([`load-test.yml`](.github/workflows/load-test.yml)) against the production image in Docker Compose, then check the database.
 
 Measured on one laptop (i7-12650H; app, database and load generator on the same machine), so treat these as relative baselines, not production capacity:
 
@@ -246,13 +246,23 @@ Measured on one laptop (i7-12650H; app, database and load generator on the same 
 | Burst of 200 simultaneous bookings | p50 ≈ 2.1–3.9 s; a no-contention control was just as slow, so the bottleneck is database throughput (~60–90 transactional bookings/s here), not lock contention | documented next steps |
 | Correctness under every load run | no oversold or negative night; last-unit burst sold exactly 1, 3-unit burst exactly 3 | ✅ |
 
-One hypothesis (fail fast on sold-out nights) made no measurable difference, so it was reverted. Full method and numbers: [docs/07](docs/07-milestone-6-observability.md).
+One hypothesis (fail fast on sold-out nights) made no measurable difference, so it was reverted.
+
+**k6 in CI** (GitHub runner, production image, MongoDB + Redis in Compose):
+
+| Run | Result |
+|---|---|
+| Browse, 20 VUs × 60 s | p95 **12–16 ms** (list, detail, quote), 0 errors |
+| 200 logged-in users book the **same one-unit** listing | exactly **1 booked, 199 sold out, 0 errors**; the database check passes |
+| ...burst latency | p95 **4.6 s → 1.35 s** after a CPU profile showed **55% of server CPU in synchronous PBKDF2** from session encryption, which was then removed |
+
+That run also corrected an earlier conclusion ("the database is the bottleneck"): the slow database timings were really time spent waiting for a busy Node event loop. Full method and numbers: [docs/07](docs/07-milestone-6-observability.md#8-k6-in-ci-and-a-correction-to-finding-3).
 
 ## CI/CD and deployment
 
 Every push runs GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
 
-**lint + 153 tests (with a real Redis service) → dependency audit → Docker job** (build the production image, assert non-root and no secrets inside, run the tests inside the container, `compose up --wait`, smoke test, **graceful-shutdown check**, data persistence, Trivy scan) **→ (main only) publish to GHCR → deploy that exact image digest**.
+**lint + 156 tests (with a real Redis service) → dependency audit → Docker job** (build the production image, assert non-root and no secrets inside, run the tests inside the container, `compose up --wait`, smoke test, **graceful-shutdown check**, data persistence, Trivy scan) **→ (main only) publish to GHCR → deploy that exact image digest**.
 
 Actions are pinned to commit SHAs, and the workflow token is read-only by default. The deployment plan (Render + MongoDB Atlas, secrets, migrations, health checks, backups, rollback, scaling) is in [docs/08](docs/08-milestone-7-ci-cd.md).
 
@@ -273,7 +283,7 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 ├── models/                   # User, Listing, Review, Booking, InventoryNight, IdempotencyRecord, Payment, Refund, WebhookEvent
 ├── controllers/ routes/ views/ public/
 ├── init/                     # seed, create-admin, booking migration
-├── test/                     # 153 tests + Razorpay simulator
+├── test/                     # 156 tests + Razorpay simulator
 ├── load/                     # load baseline + k6 scripts
 ├── ci/smoke.js               # end-to-end smoke test used by CI
 ├── Dockerfile, compose*.yaml
@@ -289,7 +299,7 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 - Changing booking dates isn't supported (cancel and rebook).
 - The Content-Security-Policy still allows inline scripts (the views use inline handlers).
 - The real-Redis tests (3) run in CI, which has Redis; locally they're skipped unless `TEST_REDIS_URL` is set. The fallback behaviour is tested everywhere.
-- Load numbers come from a single laptop; k6 scripts haven't been run.
+- Load numbers come from one laptop and from GitHub runners (2 to 4 vCPUs), not from production hardware.
 
 ## Documentation
 
