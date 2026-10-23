@@ -16,8 +16,9 @@ function rows(file) {
   const reqs = metrics.http_reqs || {};
   const failed = metrics.http_req_failed || {};
   out.push(`| ${file.replace(/-summary\.json$/, "")} | **all requests** | ${reqs.count ?? "–"} requests | ${reqs.rate ? reqs.rate.toFixed(1) + " req/s" : "–"} | errors: ${((failed.value ?? 0) * 100).toFixed(2)} % | |`);
-  if (metrics.bookings_created) {
-    out.push(`| ${file.replace(/-summary\.json$/, "")} | **bookings created / sold out** | ${metrics.bookings_created.count} | ${metrics.bookings_sold_out ? metrics.bookings_sold_out.count : 0} | | |`);
+  if (metrics.bookings_created || metrics.bookings_sold_out) {
+    const n = (m) => (metrics[m] ? metrics[m].count : 0);
+    out.push(`| ${file.replace(/-summary\.json$/, "")} | **bookings: created / sold out / unexpected** | ${n("bookings_created")} | ${n("bookings_sold_out")} | ${n("bookings_unexpected_status")} | |`);
   }
   return out;
 }

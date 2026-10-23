@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/Mmeghna10/travel-by-chance/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Mmeghna10/travel-by-chance/actions/workflows/ci.yml)
 
+**Live:** **https://travel-by-chance-main.onrender.com** (Render free tier + MongoDB Atlas). The first visit after ~15 idle minutes takes about a minute while the instance wakes. Payments run in clearly-labelled **DEMO** mode until a Razorpay account is activated.
+
 A travel-stays booking platform (in the style of Airbnb) built with **Node.js, Express 5, EJS and MongoDB**. On top of a working listings marketplace, it focuses on the backend problems real booking systems have:
 
 - **No double booking:** 100 users racing for the last room produce exactly **1** booking and **99** "sold out" answers. Inventory is never negative and never oversold, even under concurrent load.
@@ -10,7 +12,7 @@ A travel-stays booking platform (in the style of Airbnb) built with **Node.js, E
 - **An explicit booking state machine:** unpaid holds expire automatically, and every transition is guarded and audited.
 - **Production practice:** Docker, structured logs with request IDs, Prometheus metrics, load testing, and a GitHub Actions pipeline that tests the real containers on every push.
 
-Everything above is backed by **147 automated tests** against a real MongoDB replica set, including concurrency races and mutation checks (safeguards deliberately broken to prove the tests catch it). How each piece was designed, measured and verified is in [`docs/`](#documentation).
+Everything above is backed by **153 automated tests** against a real MongoDB replica set, including concurrency races and mutation checks (safeguards deliberately broken to prove the tests catch it). How each piece was designed, measured and verified is in [`docs/`](#documentation).
 
 ---
 
@@ -220,7 +222,7 @@ Errors are JSON `{ success: false, code, message }`. Every response carries `X-R
 ## Testing
 
 ```bash
-npm test        # 147 tests (3 need Redis: TEST_REDIS_URL); starts a real in-memory MongoDB replica set per file
+npm test        # 153 tests (3 need Redis: TEST_REDIS_URL); starts a real in-memory MongoDB replica set per file
 npm run lint    # ESLint
 ```
 
@@ -250,9 +252,11 @@ One hypothesis (fail fast on sold-out nights) made no measurable difference, so 
 
 Every push runs GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
 
-**lint + 147 tests (with a real Redis service) → dependency audit → Docker job** (build the production image, assert non-root and no secrets inside, run the tests inside the container, `compose up --wait`, smoke test, **graceful-shutdown check**, data persistence, Trivy scan) **→ (main only) publish to GHCR → deploy that exact image digest**.
+**lint + 153 tests (with a real Redis service) → dependency audit → Docker job** (build the production image, assert non-root and no secrets inside, run the tests inside the container, `compose up --wait`, smoke test, **graceful-shutdown check**, data persistence, Trivy scan) **→ (main only) publish to GHCR → deploy that exact image digest**.
 
 Actions are pinned to commit SHAs, and the workflow token is read-only by default. The deployment plan (Render + MongoDB Atlas, secrets, migrations, health checks, backups, rollback, scaling) is in [docs/08](docs/08-milestone-7-ci-cd.md).
+
+**Deployed:** the published image runs on Render from GHCR, with its own Atlas database (separate from development) and a least-privilege database user (`readWrite` on that one database). It was checked after deployment: health and readiness, all pages and the 41 listings, the DEMO payment label, HTTP→HTTPS redirect, HSTS/CSP headers, `/metrics` closed without its token, and no cookie for anonymous visitors.
 
 ## Project structure
 
@@ -269,7 +273,7 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 ├── models/                   # User, Listing, Review, Booking, InventoryNight, IdempotencyRecord, Payment, Refund, WebhookEvent
 ├── controllers/ routes/ views/ public/
 ├── init/                     # seed, create-admin, booking migration
-├── test/                     # 147 tests + Razorpay simulator
+├── test/                     # 153 tests + Razorpay simulator
 ├── load/                     # load baseline + k6 scripts
 ├── ci/smoke.js               # end-to-end smoke test used by CI
 ├── Dockerfile, compose*.yaml
@@ -279,12 +283,11 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 ## Known limitations
 
 - **Razorpay:** tested against a simulator with real signatures, and Checkout loads in the browser, but a **live sandbox payment hasn't been run** (account onboarding needed KYC). See [docs/05](docs/05-milestone-4-payments.md#-pending-live-razorpay-sandbox-check).
-- **Not deployed yet:** the pipeline publishes and can deploy, but no production environment exists.
+- **Free hosting tier:** the Render instance sleeps when idle (about a minute to wake), and the background jobs run inside the web process, catching up after it wakes. Atlas's free tier has no automatic backups; see [docs/08](docs/08-milestone-7-ci-cd.md#backups-and-restore).
 - **Live payments** need a Razorpay account activated with your own KYC; the code side is ready ([docs/10](docs/10-redis-and-going-live.md#going-live-with-real-payments)). The policy pages are plain-language descriptions of the app's behaviour, not legal advice.
 - Full refunds only; no partial-refund policy; no admin screen for `REFUND_FAILED` bookings.
 - Changing booking dates isn't supported (cancel and rebook).
 - The Content-Security-Policy still allows inline scripts (the views use inline handlers).
-- `cloudinary@1` (required by `multer-storage-cloudinary@4`) has a known high advisory; our fixed upload parameters don't reach it, but the dependency should be replaced.
 - The real-Redis tests (3) run in CI, which has Redis; locally they're skipped unless `TEST_REDIS_URL` is set. The fallback behaviour is tested everywhere.
 - Load numbers come from a single laptop; k6 scripts haven't been run.
 

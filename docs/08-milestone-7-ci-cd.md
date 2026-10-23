@@ -169,9 +169,22 @@ Branch `milestone-7-ci-cd` was pushed to GitHub (not `main`). Every run, includi
 - **One green run isn't proof when the failure is intermittent.** Run 39595562847 passed by luck (machine assignment). Proof came from a pass *on the kernel that had failed*, which is why CI now records the kernel.
 - **"Newer" isn't the same as "fixed".** MongoDB 8.3.13 contains the same deliberate refusal as 8.0.34.
 
-## 5. ⏳ Not yet verified
-- **Publish to GHCR and Deploy**: they only run on `main`. Publishing will run on the first merge to `main`; deploying additionally needs the Render service and the `RENDER_DEPLOY_HOOK_URL` secret (§2).
-- **No production environment exists yet** (Render, Atlas production cluster).
+## 5. Production (verified after Milestone 8)
+- **Publish:** runs on every merge to `main`. For example, merge `4572731` published `ghcr.io/mmeghna10/travel-by-chance:main` and `:sha-4572731…` (digest `sha256:9af05462…`). The package is public, so Render pulls it without credentials.
+- **Live site:** https://travel-by-chance-main.onrender.com, a Render web service (free, Singapore) running that image.
+  - **Database:** its own Atlas database `travelbychance`, separate from the development database, used through a dedicated user `tbc-prod` with `readWrite` on that database only.
+  - **Data:** loaded with `create-admin` and the seed; map locations were filled in by `npm run fix:locations`.
+- **Checked after deployment:**
+  - `/healthz` and `/readyz` (`db: ok`).
+  - All public pages, all 41 listings and the search API.
+  - The booking box shows DEMO mode, never "test mode", and doesn't load Razorpay's script.
+  - `http://` redirects 301 to `https://`; HSTS, CSP (with `upgrade-insecure-requests`), nosniff and frame-options headers are set.
+  - `/metrics` returns 401 without the token; no cookie is set for anonymous visitors.
+- **Free-tier trade-offs:**
+  - There's no separate worker, so `RUN_BACKGROUND_JOBS` stays on in the web process.
+  - The instance sleeps when idle, and jobs catch up when it wakes. Expiry compares `expiresAt`, so a late sweep is still correct.
+  - Atlas free tier has no automatic backups.
+- **Deploy hook:** the Deploy job skips with a notice until `RENDER_DEPLOY_HOOK_URL` is added to the GitHub `production` environment. Until then, Render redeploys from its dashboard.
 
 ## Files
 - **New:** `.github/workflows/ci.yml`, `ci/smoke.js`, `eslint.config.js`, `docs/08-milestone-7-ci-cd.md`.

@@ -23,6 +23,7 @@ const CHECK_OUT = __ENV.CHECK_OUT || isoDay(201);
 
 const bookingsCreated = new Counter("bookings_created");
 const soldOut = new Counter("bookings_sold_out");
+const unexpected = new Counter("bookings_unexpected_status");
 
 // 201 and 409 (sold out) are both correct answers here, not failures.
 http.setResponseCallback(http.expectedStatuses(200, 201, 302, 409));
@@ -41,6 +42,11 @@ export const options = {
   thresholds: {
     http_req_failed: ["rate<0.01"],
     bookings_created: [`count<=${UNITS}`], // never oversell
+    // Every other user must have COMPETED and been told "sold out". Without
+    // this, a broken setup (e.g. users not logged in) passes the oversell
+    // check trivially, which is exactly what the first CI run did.
+    bookings_sold_out: [`count==${USERS - UNITS}`],
+    bookings_unexpected_status: ["count==0"],
     "http_req_duration{endpoint:book}": ["p(95)<5000"],
   },
 };
@@ -66,6 +72,10 @@ export function setup() {
     const sid = res.cookies["tbc.sid"];
     if (res.status !== 302 || !sid) throw new Error(`signup ${i} failed: ${res.status}`);
     cookies.push(sid[0].value);
+    // Forget this user before signing up the next one. Otherwise the next
+    // signup sends this cookie, logging in replaces that session, and every
+    // user but the last ends up logged out.
+    http.cookieJar().clear(BASE);
   }
   return { cookies };
 }
@@ -85,5 +95,9 @@ export default function (data) {
   );
   check(res, { "201 or 409": (r) => r.status === 201 || r.status === 409 });
   if (res.status === 201) bookingsCreated.add(1);
-  if (res.status === 409) soldOut.add(1);
+  else if (res.status === 409) soldOut.add(1);
+  else {
+    unexpected.add(1);
+    console.warn(`VU ${__VU}: unexpected ${res.status} ${String(res.body).slice(0, 120)}`);
+  }
 }
