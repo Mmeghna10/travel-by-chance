@@ -57,6 +57,21 @@ function isoDay(offset) {
   return new Date(d.getTime() + offset * 86400000).toISOString().slice(0, 10);
 }
 
+// The app's own /metrics, so teardown() can show where the burst's time went
+// on the SERVER: Node CPU, event-loop delay, and per-command MongoDB latency.
+// (Needs /metrics reachable without a token, as in the local/CI stack.)
+function serverMetrics() {
+  const res = http.get(`${BASE}/metrics`, { tags: { endpoint: "metrics" } });
+  const values = {};
+  if (res.status !== 200) return null;
+  for (const line of String(res.body).split("\n")) {
+    if (!line || line[0] === "#") continue;
+    const i = line.lastIndexOf(" ");
+    values[line.slice(0, i)] = Number(line.slice(i + 1));
+  }
+  return { at: Date.now(), values };
+}
+
 // Sign up one user per VU before the burst (not measured as part of it).
 export function setup() {
   if (!LISTING_ID) throw new Error("Set -e LISTING_ID=<a listing id> (and -e UNITS=<its units>)");
@@ -77,7 +92,26 @@ export function setup() {
     // user but the last ends up logged out.
     http.cookieJar().clear(BASE);
   }
-  return { cookies };
+  // Snapshot last, so the comparison covers the burst and not the signups.
+  // (Scraping also resets the event-loop delay histogram.)
+  return { cookies, before: serverMetrics() };
+}
+
+export function teardown(data) {
+  const after = serverMetrics();
+  if (!data.before || !after) return console.log("server metrics unavailable (protected /metrics?)");
+  const d = (key) => (after.values[key] || 0) - (data.before.values[key] || 0);
+  const seconds = (after.at - data.before.at) / 1000;
+  const cpu = d("process_cpu_seconds_total");
+  console.log(`SERVER burst wall time ${seconds.toFixed(1)} s, Node CPU ${cpu.toFixed(2)} s (${((cpu / seconds) * 100).toFixed(0)}% of one core)`);
+  console.log(`SERVER event-loop delay max ${(after.values.nodejs_eventloop_lag_max_seconds * 1000).toFixed(0)} ms, p99 ${(after.values.nodejs_eventloop_lag_p99_seconds * 1000).toFixed(0)} ms`);
+  for (const key of Object.keys(after.values)) {
+    const m = key.match(/^mongodb_command_duration_seconds_count\{command="(\w+)"\}$/);
+    const calls = m && d(key);
+    if (!calls) continue;
+    const sum = d(`mongodb_command_duration_seconds_sum{command="${m[1]}"}`);
+    console.log(`SERVER mongodb ${m[1]}: ${calls} calls, avg ${((sum / calls) * 1000).toFixed(1)} ms`);
+  }
 }
 
 export default function (data) {
