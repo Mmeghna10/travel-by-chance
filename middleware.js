@@ -5,10 +5,14 @@ const Review = require("./models/review.js")
 
 module.exports.isLoggedIn = (req, res, next) => {
      if(!req.isAuthenticated()){
-        if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1) || req.originalUrl.startsWith('/bookings') || req.originalUrl.startsWith('/api/')) {
+        // API and fetch() callers get a JSON 401. Browser pages (including My
+        // Bookings, e.g. after the session expired) go to the login page.
+        if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1) || req.originalUrl.startsWith('/api/')) {
           return res.status(401).json({ success: false, code: "UNAUTHENTICATED", message: "You must be logged in to reserve stays!" });
         }
-        req.session.redirectUrl = req.originalUrl;
+        // Come back here after logging in. Only for GETs: returning to a form
+        // POST's URL (like /bookings/:id/cancel) would be a 404.
+        req.session.redirectUrl = req.method === "GET" ? req.originalUrl : "/bookings";
         req.flash("error", "You must be logged in!");
         return res.redirect("/login");
    }

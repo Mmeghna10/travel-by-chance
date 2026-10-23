@@ -94,5 +94,16 @@ test("logout redirects and ends the session", async () => {
   const agent = await loginAgent(app, "carol");
   assert.equal((await agent.get("/logout")).status, 302);
   const res = await agent.get("/bookings");
-  assert.equal(res.status, 401);
+  assert.equal(res.status, 302, "My Bookings sends a logged-out browser to the login page");
+  assert.equal(res.headers.location, "/login");
+  assert.equal((await agent.get("/api/v1/bookings/000000000000000000000000")).status, 401, "the API answers 401");
+});
+
+test("a logged-out visitor to My Bookings is returned there after logging in", async () => {
+  await createUser("dave");
+  const agent = request.agent(app);
+  assert.equal((await agent.get("/bookings")).headers.location, "/login");
+  const login = await agent.post("/login").type("form").send({ username: "dave", password: PASSWORD });
+  assert.equal(login.headers.location, "/bookings");
+  assert.equal((await agent.get("/bookings")).status, 200);
 });
