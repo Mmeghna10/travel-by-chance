@@ -5,17 +5,14 @@ const Booking = require("../models/booking.js");
 const InventoryNight = require("../models/inventoryNight.js");
 const { quote } = require("../modules/bookings/pricing.js");
 const { cachedListings } = require("../modules/cache/listingCache.js");
-const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding');
-const mapToken = process.env.MAP_TOKEN;
-const geocodingClient = mbxGeocoding({ accessToken: mapToken });
+const { createGeocoder, placeQuery, NOT_FOUND } = require("../modules/listings/geocode.js");
+const lookUpPlace = createGeocoder();
 
 const MAX_QUERY_LENGTH = 100;
 
-async function geocode(location) {
-  const geoResponse = await geocodingClient.forwardGeocode({ query: location, limit: 1 }).send();
-  const features = geoResponse.body.features;
-  // Fallback to [0,0] if location not found
-  return features && features.length > 0 ? features[0].geometry : { type: "Point", coordinates: [0, 0] };
+async function geocode({ location, country }) {
+  // Fallback to [0,0] if location not found (npm run fix:locations retries these)
+  return (await lookUpPlace(placeQuery({ location, country }), { country })) || { type: "Point", coordinates: NOT_FOUND };
 }
 
 
@@ -118,7 +115,7 @@ module.exports.createListing = async (req, res, next) => {
   newListing.owner = req.user._id;
   newListing.image = { url, filename };
 
-  newListing.geometry = await geocode(`${req.body.listing.location}, ${req.body.listing.country}`);
+  newListing.geometry = await geocode(req.body.listing);
 
   await newListing.save();
   req.flash("success", "🎉 New listing created successfully!");
@@ -147,7 +144,7 @@ module.exports.updateListing = async (req, res) => {
   const locationChanged = fields.location !== listing.location || fields.country !== listing.country;
   listing.set(fields);
   if (locationChanged) {
-    listing.geometry = await geocode(`${fields.location}, ${fields.country}`);
+    listing.geometry = await geocode(fields);
   }
   if (req.file) {
     listing.image = { url: req.file.path, filename: req.file.filename };

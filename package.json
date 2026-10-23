@@ -15,7 +15,8 @@
     "migrate:bookings": "node init/migrate-bookings.js",
     "worker": "node worker.js",
     "load:baseline": "node load/baseline.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "fix:locations": "node init/fix-listing-locations.js"
   },
   "author": "",
   "license": "ISC",
