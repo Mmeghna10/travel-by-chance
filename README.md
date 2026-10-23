@@ -10,7 +10,7 @@ A travel-stays booking platform (in the style of Airbnb) built with **Node.js, E
 - **An explicit booking state machine:** unpaid holds expire automatically, and every transition is guarded and audited.
 - **Production practice:** Docker, structured logs with request IDs, Prometheus metrics, load testing, and a GitHub Actions pipeline that tests the real containers on every push.
 
-Everything above is backed by **140 automated tests** against a real MongoDB replica set, including concurrency races and mutation checks (safeguards deliberately broken to prove the tests catch it). How each piece was designed, measured and verified is in [`docs/`](#documentation).
+Everything above is backed by **147 automated tests** against a real MongoDB replica set, including concurrency races and mutation checks (safeguards deliberately broken to prove the tests catch it). How each piece was designed, measured and verified is in [`docs/`](#documentation).
 
 ---
 
@@ -164,7 +164,15 @@ ADMIN_PASSWORD=choose-a-password npm run create-admin -- --username host1 --emai
 ```bash
 npm run seed
 ```
-`npm run seed` **replaces all listings** with sample data.
+`npm run seed` **replaces all listings** with sample data. With `MAP_TOKEN` set, each listing gets its real map location (looked up from its city and country).
+
+Listings seeded before that fix all point to Delhi. To repair them (dry run first, then `--apply`):
+```bash
+npm run fix:locations
+```
+```bash
+npm run fix:locations -- --apply
+```
 
 **Or run the whole stack in Docker** (MongoDB replica set + app + worker; uses your `.env` for secrets, not for the database):
 ```bash
@@ -212,7 +220,7 @@ Errors are JSON `{ success: false, code, message }`. Every response carries `X-R
 ## Testing
 
 ```bash
-npm test        # 140 tests (3 need Redis: TEST_REDIS_URL); starts a real in-memory MongoDB replica set per file
+npm test        # 147 tests (3 need Redis: TEST_REDIS_URL); starts a real in-memory MongoDB replica set per file
 npm run lint    # ESLint
 ```
 
@@ -242,7 +250,7 @@ One hypothesis (fail fast on sold-out nights) made no measurable difference, so 
 
 Every push runs GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
 
-**lint + 140 tests (with a real Redis service) → dependency audit → Docker job** (build the production image, assert non-root and no secrets inside, run the tests inside the container, `compose up --wait`, smoke test, **graceful-shutdown check**, data persistence, Trivy scan) **→ (main only) publish to GHCR → deploy that exact image digest**.
+**lint + 147 tests (with a real Redis service) → dependency audit → Docker job** (build the production image, assert non-root and no secrets inside, run the tests inside the container, `compose up --wait`, smoke test, **graceful-shutdown check**, data persistence, Trivy scan) **→ (main only) publish to GHCR → deploy that exact image digest**.
 
 Actions are pinned to commit SHAs, and the workflow token is read-only by default. The deployment plan (Render + MongoDB Atlas, secrets, migrations, health checks, backups, rollback, scaling) is in [docs/08](docs/08-milestone-7-ci-cd.md).
 
@@ -261,7 +269,7 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 ├── models/                   # User, Listing, Review, Booking, InventoryNight, IdempotencyRecord, Payment, Refund, WebhookEvent
 ├── controllers/ routes/ views/ public/
 ├── init/                     # seed, create-admin, booking migration
-├── test/                     # 140 tests + Razorpay simulator
+├── test/                     # 147 tests + Razorpay simulator
 ├── load/                     # load baseline + k6 scripts
 ├── ci/smoke.js               # end-to-end smoke test used by CI
 ├── Dockerfile, compose*.yaml

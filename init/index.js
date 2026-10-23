@@ -4,20 +4,10 @@ const mongoose = require("mongoose");
 const initData = require("./data.js");
 const Listing = require("../models/listing.js");
 const User = require("../models/user.js");
+const { createGeocoder, placeQuery, SEED_PLACEHOLDER } = require("../modules/listings/geocode.js");
 
 const dbUrl = process.env.ATLASDB_URL || "mongodb://127.0.0.1:27017/travelbychance";
 
-main()
-  .then(() => {
-    console.log("connected to database");
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-
-async function main() {
-  await mongoose.connect(dbUrl);
-}
 
 const getCategory = (title = "", description = "") => {
   title = title.toLowerCase();
@@ -60,17 +50,41 @@ const initDB = async () => {
     return;
   }
 
-  initData.data = initData.data.map((obj) => ({
-    ...obj,
-    owner: defaultOwner._id,
-    category: getCategory(obj.title, obj.description),
-    geometry: {
-      type: "Point",
-      coordinates: [77.209, 28.613] // default coordinates
+  // Real map location for each listing. (This used to put every listing in
+  // Delhi.) Without a Mapbox token, or if a lookup fails, the placeholder is
+  // kept and `npm run fix:locations` can fill it in later.
+  const geocode = process.env.MAP_TOKEN ? createGeocoder() : null;
+  if (!geocode) console.log("MAP_TOKEN not set: listings get a placeholder location");
+  const listings = [];
+  for (const obj of initData.data) {
+    let geometry = null;
+    if (geocode) {
+      try {
+        geometry = await geocode(placeQuery(obj), { country: obj.country });
+      } catch (err) {
+        console.log(`location lookup failed for "${obj.title}": ${err.message}`);
+      }
     }
-  }));
-  await Listing.insertMany(initData.data);
-  console.log("data was initialized with owner:", defaultOwner.username);
+    listings.push({
+      ...obj,
+      owner: defaultOwner._id,
+      category: getCategory(obj.title, obj.description),
+      geometry: geometry || { type: "Point", coordinates: SEED_PLACEHOLDER },
+    });
+  }
+  await Listing.insertMany(listings);
+  const located = listings.filter((l) => l.geometry.coordinates !== SEED_PLACEHOLDER).length;
+  console.log(`data was initialized with owner: ${defaultOwner.username} (${located}/${listings.length} listings located)`);
 };
 
-initDB();
+mongoose
+  .connect(dbUrl)
+  .then(() => {
+    console.log("connected to database");
+    return initDB();
+  })
+  .catch((err) => {
+    console.log(err);
+    process.exitCode = 1;
+  })
+  .finally(() => mongoose.disconnect());
