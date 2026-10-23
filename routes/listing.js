@@ -5,9 +5,8 @@ const { isLoggedIn, isOwner, validateListing, isAdmin } = require("../middleware
 
 const listingController = require("../controllers/listings.js");
 
-const multer  = require('multer')
-const {storage} = require("../cloudConfig.js");
-const upload = multer({ storage });
+const { uploadListingImage } = require("../cloudConfig.js");
+const upload = uploadListingImage();
 
 
 
@@ -18,7 +17,7 @@ router
   .post(
     isLoggedIn,
     isAdmin,
-    upload.single('listing[image]'),
+    upload,
     validateListing,
     wrapAsync(listingController.createListing),
   )
@@ -34,7 +33,7 @@ router
   isOwner,
   // The edit form is multipart (it can include a new image), so multer must
   // parse it before validation; without this req.body was empty.
-  upload.single('listing[image]'),
+  upload,
   validateListing,
   wrapAsync(listingController.updateListing),
 )

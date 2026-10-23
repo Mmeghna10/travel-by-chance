@@ -147,11 +147,26 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   app.use(express.static(path.join(__dirname, "public")));
 
   // Reuse mongoose's connection pool for sessions instead of opening a second one.
+  //
+  // Sessions are stored unencrypted. connect-mongo's optional encryption ran a
+  // synchronous PBKDF2 (15,000 rounds of SHA-512) on every session read AND
+  // write, on the event loop: 55% of all server CPU in a 200-user booking
+  // burst (k6 + CPU profile, docs/07). It only hid the session contents (a
+  // username and flash messages); the session id is stored in the clear
+  // either way, and cookies stay signed with SECRET.
   const store = MongoStore.create({
     client: mongoose.connection.getClient(),
-    crypto: { secret: sessionSecret },
     touchAfter: 24 * 3600,
   });
+  // Sessions saved while encryption was on can't be read any more. Treat them
+  // as logged out (and delete them) instead of letting express-session crash
+  // on a session without a cookie.
+  const readSession = store.get.bind(store);
+  store.get = (sid, callback) =>
+    readSession(sid, (err, sess) => {
+      if (err || !sess || sess.cookie) return callback(err, sess);
+      store.destroy(sid, () => callback(null, null));
+    });
   store.on("error", (err) => {
     reportError(err, { message: "session store error" });
   });

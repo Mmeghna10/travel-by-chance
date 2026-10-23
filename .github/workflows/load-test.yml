@@ -1,0 +1,87 @@
+# k6 load test against the real production image (Docker Compose stack:
+# MongoDB replica set + Redis + app + worker) on a GitHub runner.
+#
+#   - browse:        20 virtual users for 60 s on list / detail / quote
+#   - booking burst: N users (default 200) book the SAME one-unit listing at once
+#   - then the DATABASE is checked: at most one active booking, no night
+#     reserved below 0 or above its units. Correctness, not just speed.
+#
+# Never pointed at the live site: the burst creates users and bookings.
+# Runs on demand (Actions tab -> "Load test (k6)" -> Run workflow) and on
+# pull requests that change the load-test files.
+
+name: Load test (k6)
+
+on:
+  workflow_dispatch:
+    inputs:
+      users:
+        description: "Users in the booking burst"
+        default: "200"
+  pull_request:
+    paths:
+      - "load/**"
+      - ".github/workflows/load-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  k6:
+    name: k6 against the Compose stack
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      BURST_USERS: ${{ inputs.users || '200' }}
+      DB_URL: mongodb://localhost:27017/travelbychance?directConnection=true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+
+      - name: Start the stack (production image)
+        run: |
+          case "$BURST_USERS" in ''|*[!0-9]*) echo "users must be a number"; exit 1;; esac
+          # Throwaway secret. Rate limits raised: every virtual user comes from
+          # one IP, and this measures booking, not the rate limiter.
+          printf 'SECRET=%s\nMAP_TOKEN=pk.eyJ1IjoiY2kifQ.ci\nRATE_LIMIT_AUTH_MAX=100000\nRATE_LIMIT_BOOKING_MAX=100000\n' "$(openssl rand -hex 32)" > .env
+          docker compose up -d --build --wait --wait-timeout 180
+          docker compose ps
+          echo "::notice title=Runner::$(nproc) CPUs, $(free -g | awk '/Mem:/{print $2}') GB RAM"
+
+      - name: Seed load-test data
+        id: seed
+        run: ATLASDB_URL="$DB_URL" node load/k6-data.js seed | tee -a "$GITHUB_OUTPUT"
+
+      - uses: grafana/setup-k6-action@43b9fc21641a76002687994433dd586f56e791b1 # v1.2.2
+        with:
+          k6-version: "1.8.1"
+
+      - name: "k6: browse (20 VUs, 60 s)"
+        run: k6 run --summary-export browse-summary.json -e VUS=20 -e DURATION=60s load/k6/browse.js
+
+      - name: "k6: booking burst on a one-unit listing"
+        if: ${{ !cancelled() && steps.seed.outcome == 'success' }}
+        env:
+          LISTING_ID: ${{ steps.seed.outputs.burst_listing }}
+        run: k6 run --summary-export burst-summary.json -e LISTING_ID="$LISTING_ID" -e UNITS=1 -e USERS="$BURST_USERS" load/k6/booking-burst.js
+
+      - name: Check the database (no oversell, no negative inventory)
+        if: ${{ !cancelled() && steps.seed.outcome == 'success' }}
+        env:
+          LISTING_ID: ${{ steps.seed.outputs.burst_listing }}
+        run: ATLASDB_URL="$DB_URL" node load/k6-data.js verify "$LISTING_ID" 1
+
+      - name: Results
+        if: ${{ !cancelled() }}
+        run: |
+          node load/k6-report.js browse-summary.json burst-summary.json | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Write conflicts retried (MongoDB):"
+          curl -s localhost:8080/metrics | grep -E '^mongodb_command_failures_total' || echo "none"
+
+      - name: Stop the stack
+        if: always()
+        run: SECRET="${SECRET:-cleanup}" docker compose down -v || true
