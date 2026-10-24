@@ -1,5 +1,6 @@
 const Joi = require('joi');
 const { AMENITY_KEYS } = require("./modules/listings/amenities.js");
+const { CATEGORY_NAMES } = require("./modules/listings/categories.js");
 
 module.exports.listingSchema =Joi.object({
     listing : Joi.object({
@@ -14,13 +15,17 @@ module.exports.listingSchema =Joi.object({
         amenities: Joi.array().items(Joi.string().valid(...AMENITY_KEYS)).single(),
         checkInTime: Joi.string().pattern(/^([01]\d|2[0-3]):[0-5]\d$/).messages({ "string.pattern.base": "Check-in time must look like 14:00" }),
         image: Joi.string().allow("", null),
-        category: Joi.string().valid("Trending", "Rooms", "Iconic Cities", "Mountains", "Castles", "Amazing Pools", "Camping", "Farms", "Arctic", "Domes", "Boats").required()
+        category: Joi.string().valid(...CATEGORY_NAMES).required()
     }).required()
 });
 
 module.exports.reviewSchema = Joi.object({
     review : Joi.object({
-        rating: Joi.number().required().min(1).max(5),
+        // The star widget's "no rating" option sends an empty value.
+        rating: Joi.number().integer().required().min(1).max(5).messages({
+            "number.base": "Please choose a star rating (1-5).",
+            "any.required": "Please choose a star rating (1-5).",
+        }),
         comment: Joi.string().required().max(2000),
 
     }).required()
