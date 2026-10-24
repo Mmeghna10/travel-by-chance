@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { invalidateListings } = require("../modules/cache/listingCache.js");
+const { AMENITY_KEYS } = require("../modules/listings/amenities.js");
 const Schema = mongoose.Schema;
 const Review = require("./review.js");
 
@@ -32,6 +33,8 @@ const listingSchema = new Schema({
     default: "12:00",
     match: [/^([01]\d|2[0-3]):[0-5]\d$/, "check-in time must be HH:MM"],
   },
+  // What the host says the stay has (keys from modules/listings/amenities.js).
+  amenities: { type: [{ type: String, enum: AMENITY_KEYS }], default: [] },
   location: String,
   country: String,
   reviews:[

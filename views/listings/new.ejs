@@ -8,7 +8,7 @@
       <i class="fa-solid fa-house-circle-plus"></i>
     </div>
     <h1 style="font-size: 1.85rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.35rem;">List Your Property</h1>
-    <p style="color: var(--text-muted); font-size: 0.95rem;">Share your space with travellers across India and the world</p>
+    <p style="color: var(--text-muted); font-size: 0.95rem;">Share your space with travellers exploring India</p>
   </div>
 
   <div style="background: white; border: 1px solid var(--border-main); border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-md);">
@@ -50,7 +50,8 @@
         </div>
         <div class="col-md-5">
           <label for="country" class="form-label-pro">Country <span style="color: var(--primary);">*</span></label>
-          <input name="listing[country]" id="country" placeholder="India" type="text" class="form-control form-control-pro" required />
+          <input name="listing[country]" id="country" value="India" type="text" class="form-control form-control-pro" readonly aria-describedby="country-note" />
+          <div id="country-note" class="form-text">TravelByChance lists stays in India only.</div>
           <div class="invalid-feedback">Please enter the country.</div>
         </div>
       </div>
@@ -61,6 +62,14 @@
           <div class="invalid-feedback">Please enter the check-in time.</div>
         </div>
       </div>
+      <fieldset class="mb-4">
+        <legend class="form-label-pro">Amenities <span style="font-weight:400;color:var(--text-subtle);">(tick only what guests really get)</span></legend>
+        <div class="amenity-checks">
+          <% AMENITIES.forEach((a) => { %>
+          <label class="amenity-check"><input type="checkbox" name="listing[amenities]" value="<%= a.key %>" <%= false ? "checked" : "" %> /> <i class="fa-solid <%= a.icon %>"></i> <%= a.label %></label>
+          <% }); %>
+        </div>
+      </fieldset>
 
       <!-- Location -->
       <div class="mb-4">

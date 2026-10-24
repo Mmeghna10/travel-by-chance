@@ -67,7 +67,6 @@
       <div class="host-avatar-box"><%= listing.owner.username.charAt(0).toUpperCase() %></div>
       <div>
         <div class="host-name-title">Hosted by <%= listing.owner.username %></div>
-        <div class="host-sub-text"><i class="fa-solid fa-badge-check me-1" style="color: var(--accent-teal);"></i> Superhost &nbsp;·&nbsp; Member since 2024</div>
       </div>
     </div>
 
@@ -77,27 +76,25 @@
       <p class="show-body-desc"><%= listing.description %></p>
     </div>
 
-    <!-- What's Included -->
+    <!-- What's Included: only what the host has listed -->
+    <% const offered = AMENITIES.filter((a) => (listing.amenities || []).includes(a.key)); %>
+    <% if (offered.length) { %>
     <div class="show-section-block">
       <h2 class="show-section-heading">What's included</h2>
       <div class="amenities-flex-grid">
-        <div class="amenity-chip"><i class="fa-solid fa-wifi"></i> Free WiFi</div>
-        <div class="amenity-chip"><i class="fa-solid fa-kitchen-set"></i> Kitchen</div>
-        <div class="amenity-chip"><i class="fa-solid fa-snowflake"></i> Air Conditioning</div>
-        <div class="amenity-chip"><i class="fa-solid fa-car"></i> Free Parking</div>
-        <div class="amenity-chip"><i class="fa-solid fa-tv"></i> Smart TV</div>
-        <div class="amenity-chip"><i class="fa-solid fa-dumbbell"></i> Gym Access</div>
-        <div class="amenity-chip"><i class="fa-solid fa-mug-hot"></i> Breakfast</div>
-        <div class="amenity-chip"><i class="fa-solid fa-shield-halved"></i> 24/7 Security</div>
+        <% offered.forEach((a) => { %>
+        <div class="amenity-chip"><i class="fa-solid <%= a.icon %>"></i> <%= a.label %></div>
+        <% }); %>
       </div>
     </div>
+    <% } %>
 
     <!-- Map -->
     <div class="show-section-block">
       <h2 class="show-section-heading">Where you'll be</h2>
       <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
         <i class="fa-solid fa-location-dot" style="color: var(--primary);"></i>&nbsp;
-        <%= listing.location %>, <%= listing.country %> &nbsp;·&nbsp; Exact address shared after booking &nbsp;·&nbsp; Check-in from <%= listing.checkInTime || "12:00" %>
+        <%= listing.location %>, <%= listing.country %> &nbsp;·&nbsp; Map shows the area &nbsp;·&nbsp; Check-in from <%= listing.checkInTime || "12:00" %>
       </p>
       <div id="map"></div>
     </div>
@@ -256,13 +253,13 @@
           <span id="service-fee"><%= formatPaise(oneNightQuote.serviceFeePaise) %></span>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 800; color: var(--dark); border-top: 1px solid var(--border-light); padding-top: 0.75rem; margin-top: 0.5rem;">
-          <span>Total before taxes</span>
+          <span>Total</span>
           <span id="total-price"><%= formatPaise(oneNightQuote.totalPaise) %></span>
         </div>
       </div>
 
       <div style="text-align: center; font-size: 0.82rem; color: var(--text-subtle);">
-        <i class="fa-solid fa-shield-halved" style="color: var(--accent-teal);"></i>&nbsp; Your booking is protected
+        <i class="fa-solid fa-shield-halved" style="color: var(--accent-teal);"></i>&nbsp; Free cancellation before check-in · <a href="/refund-policy">full refund</a>
       </div>
     </div>
   </div><!-- END RIGHT COLUMN -->

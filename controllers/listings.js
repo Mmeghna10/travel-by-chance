@@ -1,5 +1,6 @@
 
 const Listing = require("../models/listing");
+const Review = require("../models/review.js");
 const escapeRegex = require("../utils/escapeRegex.js");
 const Booking = require("../models/booking.js");
 const InventoryNight = require("../models/inventoryNight.js");
@@ -33,6 +34,18 @@ async function loadListingCards(filter, limit = 0) {
   return JSON.parse(JSON.stringify(listings.map((l) => ({ ...l, averageRating: averageRating(l.reviews) }))));
 }
 module.exports.loadListingCards = loadListingCards;
+
+// The numbers on the home page, counted from the database.
+async function loadSiteStats() {
+  const [stays, cities, ratings] = await Promise.all([
+    Listing.countDocuments(),
+    Listing.distinct("location"),
+    Review.aggregate([{ $match: { rating: { $type: "number" } } }, { $group: { _id: null, avg: { $avg: "$rating" }, count: { $sum: 1 } } }]),
+  ]);
+  const r = ratings[0];
+  return { stays, cities: cities.length, reviews: r ? r.count : 0, avgRating: r ? Number(r.avg.toFixed(1)) : null };
+}
+module.exports.loadSiteStats = loadSiteStats;
 
 module.exports.index = async (req, res) => {
   let { q, category } = req.query;
@@ -143,6 +156,8 @@ module.exports.updateListing = async (req, res) => {
 
   const locationChanged = fields.location !== listing.location || fields.country !== listing.country;
   listing.set(fields);
+  // Unticked checkboxes aren't sent at all, so "none ticked" means none.
+  listing.amenities = [].concat(fields.amenities || []);
   if (locationChanged) {
     listing.geometry = await geocode(fields);
   }

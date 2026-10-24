@@ -16,7 +16,8 @@
     "worker": "node worker.js",
     "load:baseline": "node load/baseline.js",
     "lint": "eslint .",
-    "fix:locations": "node init/fix-listing-locations.js"
+    "fix:locations": "node init/fix-listing-locations.js",
+    "remove:non-india": "node init/remove-non-india-listings.js"
   },
   "author": "",
   "license": "ISC",
