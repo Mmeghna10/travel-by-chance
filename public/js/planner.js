@@ -54,6 +54,7 @@
     section.append(el("h2", "planner-h2", title));
     section.append(el("p", "planner-muted", `${win.startAt} – ${win.endAt} · ${win.modeLabel}${win.modeNote ? ` (${win.modeNote})` : ""}`));
     if (win.rentalMinutes) section.append(el("p", "planner-line", `Pick up your rented vehicle first (${win.rentalMinutes} min).`));
+    if (win.leaveHotelAt) section.append(el("p", "planner-line", `Rest at the hotel; leave at ${win.leaveHotelAt} to arrive as the first place opens.`));
     if (!win.stops.length) {
       section.append(el("p", "planner-muted", "Nothing fits in this time (closing times and travel). Relax at the hotel."));
       return section;
