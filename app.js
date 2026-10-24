@@ -22,6 +22,7 @@ const wrapAsync = require("./utils/wrapAsync.js");
 const safeJson = require("./utils/safeJson.js");
 const { createAuthLimiter, createBookingLimiter } = require("./middleware/rateLimits.js");
 const { formatPaise } = require("./modules/bookings/pricing.js");
+const { AMENITIES } = require("./modules/listings/amenities.js");
 const User = require("./models/user.js");
 
 const listingRouter = require("./routes/listing.js");
@@ -56,6 +57,7 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   app.engine("ejs", ejsMate);
   app.locals.safeJson = safeJson;
   app.locals.formatPaise = formatPaise;
+  app.locals.AMENITIES = AMENITIES;
   app.locals.mapToken = process.env.MAP_TOKEN;
   app.set("bookingOptions", bookings);
   app.locals.business = { name: "TravelByChance", email: "", phone: "", address: "", ...business };
@@ -239,8 +241,12 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   app.get(
     "/",
     wrapAsync(async (req, res) => {
-      const featuredListings = await cachedListings("featured", {}, () => listingController.loadListingCards({}, 3));
-      res.render("landing.ejs", { featuredListings });
+      const [featuredListings, stats] = await Promise.all([
+        cachedListings("featured", {}, () => listingController.loadListingCards({}, 3)),
+        // Listing and review changes bump the cache generation (model hooks).
+        cachedListings("stats", {}, () => listingController.loadSiteStats()),
+      ]);
+      res.render("landing.ejs", { featuredListings, stats });
     }),
   );
 

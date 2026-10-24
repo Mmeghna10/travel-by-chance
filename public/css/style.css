@@ -1247,3 +1247,8 @@ img { max-width: 100%; display: block; }
 .planner-checkin { text-align: center; font-weight: 800; background: var(--primary-light); border-color: var(--primary-border); }
 .planner-summary { font-weight: 600; }
 .planner-notes { font-size: 0.82rem; color: var(--text-muted, #777); padding-left: 1.1rem; }
+
+/* ─── Amenity checkboxes (host form) ─── */
+.amenity-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.5rem 1rem; margin-top: 0.5rem; }
+.amenity-check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+.amenity-check i { color: var(--primary); width: 1.1rem; text-align: center; }

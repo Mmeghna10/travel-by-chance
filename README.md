@@ -4,7 +4,7 @@
 
 **Live:** **https://travel-by-chance-main.onrender.com** (Render free tier + MongoDB Atlas). The first visit after ~15 idle minutes takes about a minute while the instance wakes. Payments run in clearly-labelled **DEMO** mode until a Razorpay account is activated.
 
-A travel-stays booking platform (in the style of Airbnb) built with **Node.js, Express 5, EJS and MongoDB**. On top of a working listings marketplace, it focuses on the backend problems real booking systems have:
+A booking platform for stays **across India** (in the style of Airbnb; all prices in ₹) built with **Node.js, Express 5, EJS and MongoDB**. On top of a working listings marketplace, it focuses on the backend problems real booking systems have:
 
 - **No double booking:** 100 users racing for the last room produce exactly **1** booking and **99** "sold out" answers. Inventory is never negative and never oversold, even under concurrent load.
 - **No duplicate bookings or charges** from double clicks, retries or network failures (idempotency keys).

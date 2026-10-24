@@ -11,7 +11,7 @@
     </div>
 
     <h1 class="hero-title-bold">
-      Discover <span class="hero-title-gradient">Exceptional Stays</span><br>Across the World
+      Discover <span class="hero-title-gradient">Exceptional Stays</span><br>Across India
     </h1>
     <p class="hero-subtext mx-auto">
       Handpicked cabins, mountain retreats, tropical villas, and heritage havens — curated for unforgettable journeys.
@@ -23,7 +23,7 @@
         <div class="row g-0 align-items-center">
           <div class="col-12 col-md-5 text-start" style="padding: 0.5rem 1.1rem; border-right: 1px solid var(--border-main);">
             <label class="form-label-hero"><i class="fa-solid fa-location-dot me-1" style="color: var(--primary);"></i>Where to?</label>
-            <input type="text" name="q" class="form-input-hero w-100" placeholder="Cities, states, countries..." />
+            <input type="text" name="q" class="form-input-hero w-100" placeholder="Cities or states, e.g. Goa, Jaipur..." />
           </div>
           <div class="col-12 col-md-4 text-start position-relative" style="padding: 0.5rem 1.1rem; border-right: 1px solid var(--border-main);">
             <label class="form-label-hero"><i class="fa-solid fa-tags me-1" style="color: var(--amber);"></i>Stay Type</label>
@@ -77,23 +77,27 @@
       <% } %>
     </div>
 
-    <!-- Trust Stats -->
+    <!-- Stats: real numbers from the database (they used to be made up) -->
+    <% if (stats && stats.stays > 0) { %>
     <div class="d-flex justify-content-center gap-5 mt-5 flex-wrap">
       <div class="text-center">
-        <div style="font-family:var(--font-display);font-size:2.2rem;font-weight:600;color:var(--cream);letter-spacing:-0.02em;">500+</div>
-        <div style="font-size:0.75rem;color:rgba(227,222,202,0.5);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Curated Stays</div>
+        <div style="font-family:var(--font-display);font-size:2.2rem;font-weight:600;color:var(--cream);letter-spacing:-0.02em;"><%= stats.stays %></div>
+        <div style="font-size:0.75rem;color:rgba(227,222,202,0.5);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;"><%= stats.stays === 1 ? 'Stay' : 'Stays' %></div>
       </div>
       <div style="width:1px;background:rgba(227,222,202,0.15);align-self:stretch;"></div>
       <div class="text-center">
-        <div style="font-family:var(--font-display);font-size:2.2rem;font-weight:600;color:var(--cream);letter-spacing:-0.02em;">50+</div>
-        <div style="font-size:0.75rem;color:rgba(227,222,202,0.5);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Destinations</div>
+        <div style="font-family:var(--font-display);font-size:2.2rem;font-weight:600;color:var(--cream);letter-spacing:-0.02em;"><%= stats.cities %></div>
+        <div style="font-size:0.75rem;color:rgba(227,222,202,0.5);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;"><%= stats.cities === 1 ? 'City' : 'Cities' %> in India</div>
       </div>
+      <% if (stats.reviews > 0) { %>
       <div style="width:1px;background:rgba(227,222,202,0.15);align-self:stretch;"></div>
       <div class="text-center">
-        <div style="font-family:var(--font-display);font-size:2.2rem;font-weight:600;color:var(--amber);letter-spacing:-0.02em;">4.8 ★</div>
-        <div style="font-size:0.75rem;color:rgba(227,222,202,0.5);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Avg Rating</div>
+        <div style="font-family:var(--font-display);font-size:2.2rem;font-weight:600;color:var(--amber);letter-spacing:-0.02em;"><%= stats.avgRating + ' ★' %></div>
+        <div style="font-size:0.75rem;color:rgba(227,222,202,0.5);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Avg rating · <%= stats.reviews %> <%= stats.reviews === 1 ? 'review' : 'reviews' %></div>
       </div>
+      <% } %>
     </div>
+    <% } %>
 
   </div>
 </div>
@@ -214,10 +218,10 @@
     <div class="row g-4">
       <%
         const features = [
-          { icon: 'fa-house-circle-check', color: '#B26335', bg: '#FBF0E8', title: 'Verified Properties',    desc: 'Every listing undergoes rigorous verification — photos, amenities, and host identity checked before going live.' },
-          { icon: 'fa-shield-halved',       color: '#5D2C0C', bg: '#F7EFE6', title: 'Secure Booking',       desc: 'Advanced encryption protects your payment data and personal information every step of the way.' },
-          { icon: 'fa-star',                color: '#DDA35C', bg: '#FDF5E6', title: 'Unique Experiences',   desc: 'From heritage havelis to forest domes — discover stays you simply won\'t find anywhere else.' },
-          { icon: 'fa-headset',             color: '#3B3A1E', bg: '#F2F0E8', title: '24/7 Guest Care',      desc: 'Our support team is always on standby to assist hosts and travelers with any issue, any time.' },
+          { icon: 'fa-calendar-check',      color: '#B26335', bg: '#FBF0E8', title: 'Live Availability',    desc: 'See which nights are free before you book. Your dates are held while you pay, so nobody else can take them.' },
+          { icon: 'fa-shield-halved',       color: '#5D2C0C', bg: '#F7EFE6', title: 'Secure Payments',      desc: 'Pay through Razorpay. Card and UPI details are entered on Razorpay and never reach our servers.' },
+          { icon: 'fa-rotate-left',         color: '#DDA35C', bg: '#FDF5E6', title: 'Fair Cancellation',    desc: 'Cancel any time before your check-in date for a full refund, fees included.' },
+          { icon: 'fa-route',               color: '#3B3A1E', bg: '#F2F0E8', title: 'Plan Your Arrival Day', desc: 'Tell us when you arrive and how you travel; we suggest what to see before and after check-in.' },
         ];
       %>
       <% for (let feat of features) { %>
@@ -252,26 +256,15 @@
           Turn Your Home Into an<br>Extraordinary Stay
         </h2>
         <p style="color:rgba(227,222,202,0.65);font-size:1.05rem;line-height:1.7;max-width:500px;">
-          Earn extra income and meet travellers from around the world. List your apartment, cabin, or heritage villa in minutes.
+          Have an apartment, cabin or heritage villa? Get in touch and we'll set you up as a host.
         </p>
-        <div class="d-flex gap-4 mt-4 flex-wrap">
-          <div>
-            <div style="font-family:var(--font-display);font-size:2rem;font-weight:600;color:var(--amber);">₹50K+</div>
-            <div style="font-size:0.75rem;color:rgba(227,222,202,0.45);text-transform:uppercase;letter-spacing:0.07em;font-weight:700;">Avg Host Earnings / Month</div>
-          </div>
-          <div style="width:1px;background:rgba(227,222,202,0.12);"></div>
-          <div>
-            <div style="font-family:var(--font-display);font-size:2rem;font-weight:600;color:var(--amber);">200+</div>
-            <div style="font-size:0.75rem;color:rgba(227,222,202,0.45);text-transform:uppercase;letter-spacing:0.07em;font-weight:700;">Active Hosts</div>
-          </div>
-        </div>
       </div>
       <div class="col-lg-5 text-center text-lg-end">
         <% if (typeof currUser === 'undefined' || !currUser) { %>
-          <a href="/signup" style="display:inline-flex;align-items:center;gap:0.65rem;padding:1rem 2.2rem;background:var(--amber);color:var(--espresso);border-radius:var(--radius-pill);font-size:1rem;font-weight:800;text-decoration:none;box-shadow:var(--shadow-amber);margin-bottom:1rem;transition:all 0.24s;"
+          <a href="/contact" style="display:inline-flex;align-items:center;gap:0.65rem;padding:1rem 2.2rem;background:var(--amber);color:var(--espresso);border-radius:var(--radius-pill);font-size:1rem;font-weight:800;text-decoration:none;box-shadow:var(--shadow-amber);margin-bottom:1rem;transition:all 0.24s;"
             onmouseover="this.style.background='var(--amber-dark)';this.style.color='white';this.style.transform='translateY(-2px)';"
             onmouseout="this.style.background='var(--amber)';this.style.color='var(--espresso)';this.style.transform='';">
-            <i class="fa-solid fa-house-laptop"></i> Start Hosting Today
+            <i class="fa-solid fa-envelope"></i> Contact Us to Host
           </a>
           <br>
           <a href="/login" style="color:rgba(227,222,202,0.45);font-size:0.88rem;text-decoration:none;margin-top:0.5rem;display:inline-block;">Already a host? Log in →</a>

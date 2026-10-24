@@ -56,7 +56,8 @@
         </div>
         <div class="col-md-5">
           <label for="country" class="form-label-pro">Country <span style="color: var(--primary);">*</span></label>
-          <input name="listing[country]" id="country" value="<%= listing.country %>" type="text" class="form-control form-control-pro" required />
+          <input name="listing[country]" id="country" value="India" type="text" class="form-control form-control-pro" readonly aria-describedby="country-note" />
+          <div id="country-note" class="form-text">TravelByChance lists stays in India only.</div>
           <div class="invalid-feedback">Country should be valid!</div>
         </div>
       </div>
@@ -67,6 +68,14 @@
           <div class="invalid-feedback">Please enter the check-in time.</div>
         </div>
       </div>
+      <fieldset class="mb-4">
+        <legend class="form-label-pro">Amenities <span style="font-weight:400;color:var(--text-subtle);">(tick only what guests really get)</span></legend>
+        <div class="amenity-checks">
+          <% AMENITIES.forEach((a) => { %>
+          <label class="amenity-check"><input type="checkbox" name="listing[amenities]" value="<%= a.key %>" <%= (listing.amenities || []).includes(a.key) ? "checked" : "" %> /> <i class="fa-solid <%= a.icon %>"></i> <%= a.label %></label>
+          <% }); %>
+        </div>
+      </fieldset>
 
       <!-- Location -->
       <div class="mb-4">

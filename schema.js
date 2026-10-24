@@ -1,13 +1,17 @@
 const Joi = require('joi');
+const { AMENITY_KEYS } = require("./modules/listings/amenities.js");
 
 module.exports.listingSchema =Joi.object({
     listing : Joi.object({
         title: Joi.string().required(),
         description: Joi.string().required(),
         location: Joi.string().required(),
-        country: Joi.string().required(),
+        // TravelByChance lists stays in India only (prices are in rupees).
+        country: Joi.string().trim().valid("India").required().messages({ "any.only": "TravelByChance lists stays in India only." }),
         price: Joi.number().required().min(0),
         units: Joi.number().integer().min(1).max(100),
+        // Checkboxes: one ticked box arrives as a string, several as an array.
+        amenities: Joi.array().items(Joi.string().valid(...AMENITY_KEYS)).single(),
         checkInTime: Joi.string().pattern(/^([01]\d|2[0-3]):[0-5]\d$/).messages({ "string.pattern.base": "Check-in time must look like 14:00" }),
         image: Joi.string().allow("", null),
         category: Joi.string().valid("Trending", "Rooms", "Iconic Cities", "Mountains", "Castles", "Amazing Pools", "Camping", "Farms", "Arctic", "Domes", "Boats").required()
