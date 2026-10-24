@@ -156,3 +156,35 @@ test("My Bookings still works for a booking whose stay was removed", async () =>
   const agent = await h.loginAgent(app, "guest");
   assert.equal((await agent.get("/bookings")).status, 200);
 });
+
+test("category menus only offer categories that have stays", async () => {
+  await h.createListing(host, { category: "Rooms" });
+  await h.createListing(host, { category: "Mountains" });
+  const pills = (html) => [...html.matchAll(/class="category-pill[^"]*"[^>]*>\s*<i[^>]*><\/i>\s*([^<\n]+?)\s*<\/a>/g)].map((m) => m[1]);
+  let browse = (await h.request(app).get("/listings")).text;
+  assert.deepEqual(pills(browse), ["All Stays", "Rooms", "Mountains"]);
+  const home = (await h.request(app).get("/")).text;
+  assert.ok(home.includes('data-category="Rooms"') && !home.includes('data-category="Camping"'));
+
+  await h.createListing(host, { category: "Camping" }); // a new stay brings its category back
+  browse = (await h.request(app).get("/listings")).text;
+  assert.deepEqual(pills(browse), ["All Stays", "Rooms", "Mountains", "Camping"]);
+  assert.ok(!browse.includes("GST") && !browse.includes("Show taxes"), "no tax that is never charged");
+});
+
+test("a review without stars is not saved as 1 star", async () => {
+  const listing = await h.createListing(host);
+  await h.createUser("guest");
+  const guest = await h.loginAgent(app, "guest");
+  const noStars = await guest.post(`/listings/${listing._id}/reviews`).type("form").send({ review: { rating: "", comment: "Lovely stay" } });
+  assert.equal(noStars.status, 302);
+  assert.equal(noStars.headers.location, `/listings/${listing._id}#reviews`);
+  assert.equal(await Review.countDocuments(), 0);
+  const page = await guest.get(`/listings/${listing._id}`);
+  assert.ok(page.text.includes("Please choose a star rating"));
+  const form = (await guest.get(`/listings/${listing._id}`)).text;
+  assert.ok(form.includes('id="no-rate" class="input-no-rate" name="review[rating]" value=""'));
+
+  await guest.post(`/listings/${listing._id}/reviews`).type("form").send({ review: { rating: "4", comment: "Lovely stay" } });
+  assert.equal((await Review.findOne()).rating, 4);
+});

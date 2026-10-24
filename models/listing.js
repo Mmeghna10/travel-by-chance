@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { invalidateListings } = require("../modules/cache/listingCache.js");
 const { AMENITY_KEYS } = require("../modules/listings/amenities.js");
+const { CATEGORY_NAMES } = require("../modules/listings/categories.js");
 const Schema = mongoose.Schema;
 const Review = require("./review.js");
 
@@ -60,7 +61,7 @@ const listingSchema = new Schema({
   },
   category: {
     type: String,
-    enum: ["Trending", "Rooms", "Iconic Cities", "Mountains", "Castles", "Amazing Pools", "Camping", "Farms", "Arctic", "Domes", "Boats"],
+    enum: CATEGORY_NAMES,
     required: true,
     default: "Rooms"
   }

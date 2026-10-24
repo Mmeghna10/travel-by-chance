@@ -23,6 +23,8 @@ const safeJson = require("./utils/safeJson.js");
 const { createAuthLimiter, createBookingLimiter } = require("./middleware/rateLimits.js");
 const { formatPaise } = require("./modules/bookings/pricing.js");
 const { AMENITIES } = require("./modules/listings/amenities.js");
+const { CATEGORIES } = require("./modules/listings/categories.js");
+const ListingModel = require("./models/listing.js");
 const User = require("./models/user.js");
 
 const listingRouter = require("./routes/listing.js");
@@ -58,6 +60,7 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   app.locals.safeJson = safeJson;
   app.locals.formatPaise = formatPaise;
   app.locals.AMENITIES = AMENITIES;
+  app.locals.CATEGORIES = CATEGORIES;
   app.locals.mapToken = process.env.MAP_TOKEN;
   app.set("bookingOptions", bookings);
   app.locals.business = { name: "TravelByChance", email: "", phone: "", address: "", ...business };
@@ -224,6 +227,17 @@ function createApp({ sessionSecret, httpsOnly = false, trustProxy = 0, rateLimit
   // instances; otherwise (or while Redis is down) in this process's memory.
   app.use(["/login", "/signup"], createAuthLimiter(rateLimit.authMax));
   app.use("/api/v1/bookings", createBookingLimiter(rateLimit.bookingMax));
+
+  // Category menus (home + browse) list only categories that have stays.
+  // Cached with the listing cache, so adding a listing updates it.
+  app.get(["/", "/listings"], async (req, res, next) => {
+    try {
+      res.locals.categoriesInUse = await cachedListings("categoriesInUse", {}, () => ListingModel.distinct("category"));
+      next();
+    } catch (err) {
+      next(err);
+    }
+  });
 
   // routeBase() records each mount path for the metrics route label.
   app.use("/listings", routeBase("/listings"), listingRouter);
