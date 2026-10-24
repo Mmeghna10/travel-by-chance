@@ -218,3 +218,20 @@ test("curated hours only apply in their own city", () => {
   assert.equal(applyCurated({ name: "Humayuns tomb", lat: 28.5933, lng: 77.2507, score: 2 }).hoursSource, "curated");
   assert.equal(applyCurated({ name: "Charminar Bus Stop", lat: 17.3616, lng: 78.4747, score: 1, hoursSource: "typical" }).hoursSource, "typical", "no partial-name matches");
 });
+
+test("an early start doesn't mean waiting outside: leave the hotel later instead", () => {
+  const travel = matrix([
+    [0, 30],
+    [30, 0],
+  ]);
+  // Free from 6:45; the place opens at 9:00 and is 30 min away.
+  const r = planWindow({ start: t("06:45"), end: t("12:00"), places: [place("Hawa Mahal", { visit: 45, intervals: [[t("09:00"), t("16:30")]] })], travel });
+  assert.equal(r.leaveHotelAt, t("08:30"), "leave at 8:30, not 6:45");
+  assert.equal(r.stops[0].arrive, t("09:00"));
+  assert.equal(r.stops[0].wait, 0);
+  assert.equal(r.stops[0].start, t("09:00"));
+  assert.equal(r.returnAt, t("10:15"), "the rest of the plan doesn't move");
+  // No waiting needed: leave as soon as the window starts.
+  const open = planWindow({ start: t("10:00"), end: t("12:00"), places: [place("Open")], travel });
+  assert.equal(open.leaveHotelAt, t("10:00"));
+});

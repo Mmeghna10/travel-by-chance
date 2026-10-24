@@ -77,6 +77,8 @@ function windowView(win, hotel, kmMatrix, nodeOf) {
     modeLabel: MODES[win.mode].label,
     modeNote: MODES[win.mode].note,
     startAt: formatMinutes(win.start),
+    // Later than startAt when the first place opens later: rest until then.
+    leaveHotelAt: win.stops.length && win.leaveHotelAt > win.start ? formatMinutes(win.leaveHotelAt) : null,
     endAt: formatMinutes(win.end),
     stops,
     returnAt: formatMinutes(win.returnAt),

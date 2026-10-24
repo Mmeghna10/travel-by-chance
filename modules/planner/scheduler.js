@@ -52,7 +52,7 @@ function planWindow({ start, end, places, travel, maxPlaces = MAX_PLACES_PER_WIN
   feasible.sort((a, b) => b.place.score - a.place.score || travel(0, a.node) - travel(0, b.node));
   const cand = feasible.slice(0, maxPlaces);
   const n = cand.length;
-  if (n === 0) return { stops: [], returnAt: start, score: 0 };
+  if (n === 0) return { stops: [], leaveHotelAt: start, returnAt: start, score: 0 };
 
   const size = 1 << n;
   const finish = new Float64Array(size * n).fill(Infinity);
@@ -121,7 +121,15 @@ function planWindow({ start, end, places, travel, maxPlaces = MAX_PLACES_PER_WIN
     clock = leave;
     fromNode = node;
   }
-  return { stops, returnAt: clock + travel(fromNode, 0), returnTravelMinutes: travel(fromNode, 0), score: best.score };
+  // Don't make the guest stand outside: if the first place isn't open yet,
+  // leave the hotel later so they arrive as it opens. Nothing after it
+  // moves, because that visit still starts at the same time.
+  let leaveHotelAt = start;
+  if (stops.length && stops[0].wait > 0) {
+    leaveHotelAt = start + stops[0].wait;
+    stops[0] = { ...stops[0], arrive: stops[0].start, wait: 0 };
+  }
+  return { stops, leaveHotelAt, returnAt: clock + travel(fromNode, 0), returnTravelMinutes: travel(fromNode, 0), score: best.score };
 }
 
 /**
