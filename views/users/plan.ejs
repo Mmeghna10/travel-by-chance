@@ -1,0 +1,42 @@
+<% layout('/layouts/boilerplate') %>
+<div class="planner-page">
+  <a href="/bookings" class="planner-back"><i class="fa-solid fa-arrow-left me-1"></i>My Bookings</a>
+  <h1 class="planner-title">Plan my arrival day</h1>
+  <p class="planner-sub">
+    <strong><%= listing.title %></strong> · <%= listing.location %>, <%= listing.country %><br />
+    Arriving <%= booking.checkIn.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) %>
+    · check-in from <%= listing.checkInTime || "12:00" %>
+  </p>
+
+  <% if (!plannable) { %>
+    <p class="policy-note">This booking is no longer active, so there's nothing to plan.</p>
+  <% } else if (unavailable) { %>
+    <p class="policy-note"><%= unavailable %></p>
+  <% } else { %>
+  <form id="arrival-form" class="planner-card" data-booking="<%= booking._id %>">
+    <div class="planner-grid">
+      <label>When will you reach the hotel?
+        <input type="time" name="arrivalTime" value="<%= prefs.arrivalTime %>" required />
+      </label>
+      <label>How will you get around?
+        <select name="mode" required>
+          <% modes.forEach((m) => { %>
+            <option value="<%= m.key %>" <%= prefs.mode === m.key ? "selected" : "" %>><%= m.label %></option>
+          <% }); %>
+        </select>
+      </label>
+      <label id="rental-field" <%= prefs.mode === "rental" ? "" : "hidden" %>>Time to pick up the rental after check-in (min)
+        <input type="number" name="rentalMinutes" min="0" max="240" step="5" value="<%= prefs.rentalMinutes || 30 %>" />
+      </label>
+      <label>Back at the hotel by
+        <input type="time" name="dayEndsAt" value="<%= prefs.dayEndsAt || "21:00" %>" required />
+      </label>
+    </div>
+    <button type="submit" class="planner-btn"><i class="fa-solid fa-route me-1"></i>Plan my day</button>
+    <p id="planner-status" class="planner-status" role="status"></p>
+  </form>
+
+  <section id="plan-result" aria-live="polite"></section>
+  <% } %>
+</div>
+<script src="/js/planner.js"></script>

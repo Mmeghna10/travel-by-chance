@@ -25,6 +25,13 @@ const listingSchema = new Schema({
     max: 100,
     validate: { validator: Number.isInteger, message: "units must be a whole number" },
   },
+  // Earliest time guests can check in, local time "HH:MM". The arrival-day
+  // planner uses it to split the day into "before" and "after" check-in.
+  checkInTime: {
+    type: String,
+    default: "12:00",
+    match: [/^([01]\d|2[0-3]):[0-5]\d$/, "check-in time must be HH:MM"],
+  },
   location: String,
   country: String,
   reviews:[

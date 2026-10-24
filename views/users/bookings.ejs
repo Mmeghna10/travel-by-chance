@@ -88,6 +88,11 @@
               <% if (st === "REFUND_PENDING") { %>
                 <p style="font-size: 0.82rem; color: var(--text-muted); margin: -0.25rem 0 1rem;"><i class="fa-solid fa-rotate-left me-1"></i>Refund requested. It will show as refunded once the payment provider confirms it.</p>
               <% } %>
+              <% if (st === "PENDING_PAYMENT" || st === "CONFIRMED") { %>
+                <a href="/bookings/<%= booking._id %>/plan" style="display: block; text-align: center; width: 100%; padding: 0.5rem; margin-bottom: 0.6rem; border: 1px solid var(--primary-border); border-radius: var(--radius-pill); background: var(--primary-light); font-size: 0.82rem; font-weight: 700; color: var(--primary-dark); text-decoration: none;">
+                  <i class="fa-solid fa-route me-1"></i>Plan my arrival day
+                </a>
+              <% } %>
               <% if (canCancel) { %>
                 <form method="POST" action="/bookings/<%= booking._id %>/cancel" onsubmit="return confirm('Cancel this booking? The dates will be released.');" style="margin-bottom: 1rem;">
                   <button type="submit" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-main); border-radius: var(--radius-pill); background: white; font-size: 0.82rem; font-weight: 700; color: var(--danger); cursor: pointer;">

@@ -5,12 +5,15 @@ const wrapAsync = require("../utils/wrapAsync.js");
 const { isLoggedIn } = require("../middleware.js");
 const bookingController = require("../controllers/bookings.js");
 const paymentController = require("../controllers/payments.js");
+const plannerController = require("../controllers/planner.js");
 
 router.get("/listings/:id/quote", wrapAsync(bookingController.quote));
 router.post("/bookings", isLoggedIn, wrapAsync(bookingController.createBooking));
 router.get("/bookings/:id", isLoggedIn, wrapAsync(bookingController.showBooking));
 router.post("/bookings/:id/cancel", isLoggedIn, wrapAsync(bookingController.cancelBookingApi));
 router.post("/bookings/:id/payment-order", isLoggedIn, wrapAsync(paymentController.createOrder));
+router.put("/bookings/:id/arrival", isLoggedIn, wrapAsync(plannerController.saveArrival));
+router.get("/bookings/:id/arrival-plan", isLoggedIn, wrapAsync(plannerController.getPlan));
 router.post("/payments/verify", isLoggedIn, wrapAsync(paymentController.verify));
 router.post("/demo-payments/:orderId/pay", isLoggedIn, wrapAsync(paymentController.demoPay));
 
