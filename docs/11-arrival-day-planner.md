@@ -64,6 +64,8 @@ best[visited set][last place] = earliest time we can finish seeing `last`,
 
 Keeping the *earliest finish* per state is safe: arriving earlier never hurts, because you can always wait. The search covers 2¹² sets × 12 last places × 12 next places, about 600k steps: a few milliseconds. The answer is the highest-scoring set that gets back in time; on a tie, the one that returns earliest.
 
+**No waiting outside:** if the first place isn't open yet when the window starts (say, a 6:30 am arrival and a 9 am opening), the plan tells the guest to rest at the hotel and leave so they arrive at opening time. This was found on live Jaipur data: the first version had a guest wait 1 h 45 min outside Hawa Mahal.
+
 **Proof it's exact, not a heuristic:** a test compares it with brute force (every order of every subset) on **300 random instances**. It also checks that every returned visit fits its opening hours and that the route returns in time. A second test shows a case where "nearest place first" is worse, and the planner isn't.
 
 **The day as two windows:**
