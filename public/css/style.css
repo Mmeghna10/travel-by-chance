@@ -1217,3 +1217,33 @@ img { max-width: 100%; display: block; }
 .policy-contact dt { font-weight: 700; }
 .policy-contact dd { margin: 0; word-break: break-word; }
 .policy-note { padding: 0.85rem 1rem; border-radius: 10px; background: #fef3c7; color: #92400e; font-weight: 600; }
+
+/* ─── Arrival-day planner ─── */
+.planner-page { max-width: 760px; margin: 2rem auto 4rem; }
+.planner-back { font-size: 0.85rem; font-weight: 600; color: var(--primary); text-decoration: none; }
+.planner-title { font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 600; margin: 0.75rem 0 0.25rem; }
+.planner-sub { color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6; }
+.planner-card { background: #fff; border: 1px solid var(--border-light, #eee); border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+.planner-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.planner-grid label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; font-weight: 700; color: var(--dark, #222); }
+.planner-grid label[hidden] { display: none; }
+.planner-grid input, .planner-grid select { padding: 0.55rem 0.7rem; border: 1px solid var(--border-main, #ddd); border-radius: 10px; font-size: 0.95rem; font-weight: 500; }
+.planner-btn { padding: 0.65rem 1.4rem; border: none; border-radius: 999px; background: var(--primary); color: #fff; font-weight: 700; cursor: pointer; }
+.planner-btn:disabled { opacity: 0.6; cursor: wait; }
+.planner-status { margin: 0.75rem 0 0; font-size: 0.88rem; font-weight: 600; color: var(--primary-dark); min-height: 1.2em; }
+.planner-h2 { font-size: 1.15rem; font-weight: 800; margin: 0 0 0.25rem; }
+.planner-muted { color: var(--text-muted, #777); font-size: 0.85rem; }
+.planner-line { font-size: 0.9rem; margin-top: 0.2rem; }
+.planner-stops { list-style: none; padding: 0; margin: 0.75rem 0 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.planner-stop { border-left: 3px solid var(--primary); padding: 0.4rem 0 0.4rem 0.9rem; }
+.planner-stop-head { display: flex; align-items: center; gap: 0.6rem; }
+.planner-stop-num { width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; flex-shrink: 0; }
+.planner-stop-name { font-weight: 800; }
+.planner-wait { color: var(--text-muted, #777); }
+.planner-ok { color: #166534; font-weight: 600; }
+.planner-warn { color: #92400e; font-weight: 600; }
+.planner-link { display: inline-block; margin-top: 0.25rem; font-size: 0.82rem; font-weight: 700; color: var(--primary); }
+.planner-back-line { margin-top: 0.9rem; font-weight: 600; }
+.planner-checkin { text-align: center; font-weight: 800; background: var(--primary-light); border-color: var(--primary-border); }
+.planner-summary { font-weight: 600; }
+.planner-notes { font-size: 0.82rem; color: var(--text-muted, #777); padding-left: 1.1rem; }

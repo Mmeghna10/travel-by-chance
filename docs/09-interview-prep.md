@@ -160,6 +160,18 @@ The same CI run also caught a broken test setup: 199 of 200 "racers" weren't log
 
 ---
 
+### Q13. How does the arrival-day planner decide what to visit?
+
+**Short:** "It's the orienteering problem with time windows. From the hotel, it visits the most worthwhile places, each before it closes, and is back by a deadline. It's NP-hard in general, but each window has at most 12 candidates, so I solve it exactly with dynamic programming over subsets. The state is (set visited, last place) → earliest finish time. Earliest is the right thing to keep, because arriving early never hurts: you can wait. A test checks it against brute force on 300 random cases."
+
+**Data, honestly:**
+- **Before choosing OpenStreetMap, I measured it.** Only 9–17% of attractions in Agra and Jaipur had opening hours, the Taj Mahal had none, and the free servers took 40–73 s.
+- **So places come from OpenStreetMap,** cached for 14 days and fetched in the background (the API returns 202 and the page polls).
+- **Famous sites get official hours,** using the narrowest window when official sources disagree; everything else is labelled "typical hours, check before going".
+- **Travel times come from one Mapbox Matrix call (all pairs), cached.** If it fails, distance estimates are used and the plan says so.
+
+**A subtle bug I avoided:** the hours parser computes sunrise and sunset in the server's time zone, and the server runs in UTC. The Taj Mahal's "30 minutes before sunset" would have been 5.5 hours off. I resolve sun times myself in IST before parsing, and a test pins it.
+
 ## 3. Stories for "tell me about a bug / a time you were wrong"
 
 **The session-per-page-view bug (found by a broken load test).** My first load run produced zero bookings. Two causes were mine: my test emails used a `.test` domain the validator rejects, and my harness treated any cookie as a successful signup. But *why did a failed signup get a session cookie?* Because the flash-message middleware read `req.flash()` on every request, and that read writes `session.flash = {}`, so every anonymous visitor got a session written to MongoDB. I wrote a failing test, fixed it, and measured 3.7× more browse throughput. **Lesson:** when the numbers look wrong, ask why before tuning.

@@ -8,6 +8,8 @@ const IdempotencyRecord = require("../../models/idempotencyRecord.js");
 const Payment = require("../../models/payment.js");
 const Refund = require("../../models/refund.js");
 const WebhookEvent = require("../../models/webhookEvent.js");
+const PlaceCache = require("../../models/placeCache.js");
+const TravelCache = require("../../models/travelCache.js");
 const ExpressError = require("../../utils/ExpressError.js");
 const { validateStay, formatDay } = require("./dates.js");
 const { quote } = require("./pricing.js");
@@ -24,7 +26,8 @@ const KEY_RE = /^[A-Za-z0-9_-]{8,128}$/;
 // autoIndex. Called at startup (server.js) and in tests.
 async function ensureIndexes() {
   await Promise.all(
-    [InventoryNight, IdempotencyRecord, Booking, Payment, Refund, WebhookEvent].map((model) => model.createIndexes()),
+    // PlaceCache/TravelCache: TTL indexes so the planner caches expire on their own.
+    [InventoryNight, IdempotencyRecord, Booking, Payment, Refund, WebhookEvent, PlaceCache, TravelCache].map((model) => model.createIndexes()),
   );
 }
 

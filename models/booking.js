@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { TRAVEL_MODES } = require("../modules/planner/modes.js");
 const Schema = mongoose.Schema;
 
 // A booking gets its initial status when it is created. Every later change
@@ -70,6 +71,14 @@ const bookingSchema = new Schema({
   paidAt: Date,
   cancelledAt: Date,
   statusHistory: { type: [statusHistorySchema], default: undefined },
+  // The guest's arrival-day details, for the day planner (optional).
+  arrival: {
+    time: String, // "HH:MM" local time on the check-in date
+    mode: { type: String, enum: TRAVEL_MODES },
+    rentalMinutes: Number, // time to pick up a rented vehicle after check-in
+    dayEndsAt: String, // "HH:MM", when they want to be back for the night
+    updatedAt: Date,
+  },
   currency: { type: String, default: "INR" },
   amountPaise: Number,
   priceBreakdown: priceBreakdownSchema,

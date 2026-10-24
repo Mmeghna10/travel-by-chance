@@ -8,6 +8,7 @@ module.exports.listingSchema =Joi.object({
         country: Joi.string().required(),
         price: Joi.number().required().min(0),
         units: Joi.number().integer().min(1).max(100),
+        checkInTime: Joi.string().pattern(/^([01]\d|2[0-3]):[0-5]\d$/).messages({ "string.pattern.base": "Check-in time must look like 14:00" }),
         image: Joi.string().allow("", null),
         category: Joi.string().valid("Trending", "Rooms", "Iconic Cities", "Mountains", "Castles", "Amazing Pools", "Camping", "Farms", "Arctic", "Domes", "Boats").required()
     }).required()
