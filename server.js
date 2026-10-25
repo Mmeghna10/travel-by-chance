@@ -8,6 +8,7 @@ const { configurePayments, paymentsEnabled, paymentsMode, paymentsLive } = requi
 const { logger } = require("./modules/observability/logger.js");
 const { installProcessHandlers, reportError } = require("./modules/observability/errors.js");
 const { instrumentMongo } = require("./modules/observability/db.js");
+const { configureMail, mailEnabled } = require("./modules/notifications/mailer.js");
 const { connectRedis, closeRedis } = require("./modules/cache/redis.js");
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -16,6 +17,8 @@ async function start() {
   installProcessHandlers();
   assertRequired();
   configurePayments(config.payments); // throws on live keys unless explicitly allowed
+  configureMail(config.mail);
+  logger.info({ email: mailEnabled() ? "on" : "off" }, mailEnabled() ? "booking emails: on (SMTP)" : "booking emails: off (set SMTP_USER and SMTP_PASS)");
   if (config.bookings.requirePayment && !paymentsEnabled()) {
     throw new Error("REQUIRE_PAYMENT=true needs Razorpay keys (or DEMO_PAYMENTS=true); bookings could never be paid.");
   }

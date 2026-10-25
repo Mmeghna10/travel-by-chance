@@ -12,7 +12,7 @@ A booking platform for stays **across India** (in the style of Airbnb; all price
 - **An explicit booking state machine:** unpaid holds expire automatically, and every transition is guarded and audited.
 - **Production practice:** Docker, structured logs with request IDs, Prometheus metrics, load testing, and a GitHub Actions pipeline that tests the real containers on every push.
 
-Everything above is backed by **180 automated tests** against a real MongoDB replica set, including concurrency races and mutation checks (safeguards deliberately broken to prove the tests catch it). How each piece was designed, measured and verified is in [`docs/`](#documentation).
+Everything above is backed by **196 automated tests** against a real MongoDB replica set, including concurrency races and mutation checks (safeguards deliberately broken to prove the tests catch it). How each piece was designed, measured and verified is in [`docs/`](#documentation).
 
 ---
 
@@ -36,6 +36,7 @@ Everything above is backed by **180 automated tests** against a real MongoDB rep
 | Observability | pino JSON logs with request IDs and redaction, Prometheus `/metrics` (latency per route, booking/payment/refund outcomes, MongoDB latency and write conflicts), error-reporting hook, health and readiness probes |
 | Caching & limits | Optional **Redis**: rate-limit counters shared by every web instance and a cache-aside listing cache with generation-based invalidation. Falls back to per-process limits and direct MongoDB reads when Redis is absent or down |
 | Arrival-day planner | Guests enter their arrival time and how they'll get around (cab, public transport, rented or own vehicle, walking) and get a plan for before and after check-in: places from **OpenStreetMap**, real travel times from **Mapbox**, opening/closing hours (official hours for famous sites, sunrise/sunset computed per day), solved **exactly** with dynamic programming (checked against brute force). See [docs/11](docs/11-arrival-day-planner.md) |
+| Booking emails | Confirmation, cancellation, refund and expiry emails through a **transactional outbox** (queued in the booking's transaction, sent by the worker with retries and backoff; never on the request path). Gmail SMTP; off until configured |
 | Going live | Contact, Terms, Privacy, Cancellation & Refund and Service Delivery pages (what Razorpay checks before activating live payments), describing the code's real behaviour; payment wording that never says "test" to real payers; live keys need explicit opt-in **and** real contact details |
 | Delivery | Multi-stage Dockerfile (non-root), Docker Compose (MongoDB replica set + app + worker), GitHub Actions CI (lint, tests, audit, Docker smoke test, graceful-shutdown check, image scan), publish to GHCR, deploy-by-digest |
 
@@ -225,7 +226,7 @@ Errors are JSON `{ success: false, code, message }`. Every response carries `X-R
 ## Testing
 
 ```bash
-npm test        # 180 tests (3 need Redis: TEST_REDIS_URL); starts a real in-memory MongoDB replica set per file
+npm test        # 196 tests (3 need Redis: TEST_REDIS_URL); starts a real in-memory MongoDB replica set per file
 npm run lint    # ESLint
 ```
 
@@ -265,7 +266,7 @@ That run also corrected an earlier conclusion ("the database is the bottleneck")
 
 Every push runs GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
 
-**lint + 180 tests (with a real Redis service) → dependency audit → Docker job** (build the production image, assert non-root and no secrets inside, run the tests inside the container, `compose up --wait`, smoke test, **graceful-shutdown check**, data persistence, Trivy scan) **→ (main only) publish to GHCR → deploy that exact image digest**.
+**lint + 196 tests (with a real Redis service) → dependency audit → Docker job** (build the production image, assert non-root and no secrets inside, run the tests inside the container, `compose up --wait`, smoke test, **graceful-shutdown check**, data persistence, Trivy scan) **→ (main only) publish to GHCR → deploy that exact image digest**.
 
 Actions are pinned to commit SHAs, and the workflow token is read-only by default. The deployment plan (Render + MongoDB Atlas, secrets, migrations, health checks, backups, rollback, scaling) is in [docs/08](docs/08-milestone-7-ci-cd.md).
 
@@ -287,7 +288,7 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 ├── models/                   # User, Listing, Review, Booking, InventoryNight, IdempotencyRecord, Payment, Refund, WebhookEvent
 ├── controllers/ routes/ views/ public/
 ├── init/                     # seed, create-admin, booking migration
-├── test/                     # 180 tests + Razorpay simulator
+├── test/                     # 196 tests + Razorpay simulator
 ├── load/                     # load baseline + k6 scripts
 ├── ci/smoke.js               # end-to-end smoke test used by CI
 ├── Dockerfile, compose*.yaml
@@ -318,6 +319,7 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 | [07 Observability](docs/07-milestone-6-observability.md) | Logs, metrics, load testing and findings |
 | [08 CI/CD](docs/08-milestone-7-ci-cd.md) | Pipeline, deployment plan |
 | [09 Interview prep](docs/09-interview-prep.md) | How to explain this project |
+| [13 Booking emails](docs/13-emails.md) | Transactional outbox, retries, Gmail setup |
 | [11 Arrival-day planner](docs/11-arrival-day-planner.md) | Places, opening hours, travel times, exact scheduling |
 | [10 Redis & going live](docs/10-redis-and-going-live.md) | Shared rate limits, listing cache, policy pages, live-payment checklist |
 

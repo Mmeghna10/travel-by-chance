@@ -16,6 +16,7 @@ const { nightsBetween } = require("./dates.js");
 const { ensureNights, reserveNights, releaseNights } = require("./inventory.js");
 const { logger } = require("../observability/logger.js");
 const { bookingTransitions } = require("../observability/metrics.js");
+const { enqueueForStatus } = require("../notifications/outbox.js");
 
 // Who may cause each transition:
 //   guest   - the user who made the booking (cancel)
@@ -94,6 +95,9 @@ async function applyTransition({ booking, from, to, actor, session, set = {}, re
       { upsert: true, session },
     );
   }
+
+  // Same outbox idea for the guest's email: queued in this transaction.
+  await enqueueForStatus({ bookingId: booking._id, status: to, session, now });
 
   const effect = inventoryEffect(from, to);
   if (effect !== "none") {

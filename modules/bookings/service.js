@@ -16,6 +16,8 @@ const { quote } = require("./pricing.js");
 const { ensureNights, reserveNights, unitsLeft } = require("./inventory.js");
 const { logger } = require("../observability/logger.js");
 const { bookingAttempts, inventoryConflicts } = require("../observability/metrics.js");
+const { enqueueForStatus } = require("../notifications/outbox.js");
+const EmailOutbox = require("../../models/emailOutbox.js");
 
 const SCOPE = "booking.create";
 const DEFAULT_HOLD_MINUTES = 15;
@@ -27,7 +29,7 @@ const KEY_RE = /^[A-Za-z0-9_-]{8,128}$/;
 async function ensureIndexes() {
   await Promise.all(
     // PlaceCache/TravelCache: TTL indexes so the planner caches expire on their own.
-    [InventoryNight, IdempotencyRecord, Booking, Payment, Refund, WebhookEvent, PlaceCache, TravelCache].map((model) => model.createIndexes()),
+    [InventoryNight, IdempotencyRecord, Booking, Payment, Refund, WebhookEvent, PlaceCache, TravelCache, EmailOutbox].map((model) => model.createIndexes()),
   );
 }
 
@@ -160,6 +162,9 @@ async function createBookingInner({
         ],
         { session },
       );
+      // Instant confirmation (payments off): the confirmation email is
+      // queued with the booking. Holds get their email when paid/expired.
+      if (status === "CONFIRMED") await enqueueForStatus({ bookingId, status, session, now });
     });
   } catch (err) {
     // A duplicate request with the same key committed first: return its result.

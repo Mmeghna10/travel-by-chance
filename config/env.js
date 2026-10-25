@@ -58,6 +58,16 @@ const config = {
     phone: process.env.SUPPORT_PHONE || "",
     address: process.env.BUSINESS_ADDRESS || "",
   },
+  // Booking emails over SMTP (Gmail: an app password). Off without user/pass.
+  mail: {
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: Number(process.env.SMTP_PORT) || 465,
+    user: process.env.SMTP_USER || undefined,
+    pass: process.env.SMTP_PASS || undefined,
+    from: process.env.MAIL_FROM || undefined,
+    // Links in emails point here.
+    siteUrl: process.env.PUBLIC_URL || `http://localhost:${Number(process.env.PORT) || 8080}`,
+  },
   bookings: {
     // When true, new bookings start as PENDING_PAYMENT and hold their nights
     // for holdMinutes until paid. Defaults to on when Razorpay keys are set.

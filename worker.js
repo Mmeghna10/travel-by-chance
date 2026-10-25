@@ -10,11 +10,14 @@ const { configurePayments } = require("./modules/payments/gateway.js");
 const { logger } = require("./modules/observability/logger.js");
 const { installProcessHandlers, reportError } = require("./modules/observability/errors.js");
 const { instrumentMongo } = require("./modules/observability/db.js");
+const { configureMail, mailEnabled } = require("./modules/notifications/mailer.js");
 
 async function start() {
   installProcessHandlers();
   assertRequired();
   configurePayments(config.payments);
+  configureMail(config.mail);
+  logger.info({ email: mailEnabled() ? "on" : "off" }, mailEnabled() ? "booking emails: on (SMTP)" : "booking emails: off (set SMTP_USER and SMTP_PASS)");
   await mongoose.connect(config.dbUrl, { serverSelectionTimeoutMS: 10_000, monitorCommands: true });
   instrumentMongo(mongoose.connection);
   await ensureIndexes();

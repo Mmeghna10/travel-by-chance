@@ -37,6 +37,7 @@
     "method-override": "^3.0.0",
     "mongoose": "^8.20.4",
     "multer": "^2.1.0",
+    "nodemailer": "10.1.7",
     "opening_hours": "3.15.0",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",

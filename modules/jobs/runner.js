@@ -15,13 +15,17 @@ const { expireStaleHolds } = require("../bookings/lifecycle.js");
 const { paymentsEnabled } = require("../payments/gateway.js");
 const { processRefundQueue } = require("../payments/refunds.js");
 const { reconcilePayments } = require("../payments/reconcile.js");
+const { processEmailQueue } = require("../notifications/outbox.js");
 const crypto = require("crypto");
 const { logger: defaultLogger, withContext } = require("../observability/logger.js");
 const { jobDuration } = require("../observability/metrics.js");
 const { reportError } = require("../observability/errors.js");
 
 function defaultJobs() {
-  const jobs = [{ name: "expiry", run: expireStaleHolds }];
+  const jobs = [
+    { name: "expiry", run: expireStaleHolds },
+    { name: "emails", run: processEmailQueue },
+  ];
   if (paymentsEnabled()) {
     jobs.push({ name: "refunds", run: processRefundQueue });
     jobs.push({ name: "reconcile", run: reconcilePayments });
@@ -47,7 +51,8 @@ function startBackgroundJobs({ intervalMs = 30_000, jobs = defaultJobs(), logger
           const busy =
             (job.name === "expiry" && result.expired > 0) ||
             (job.name === "refunds" && result.length > 0) ||
-            (job.name === "reconcile" && (result.confirmed > 0 || result.errors > 0));
+            (job.name === "reconcile" && (result.confirmed > 0 || result.errors > 0)) ||
+            (job.name === "emails" && (result.SENT > 0 || result.RETRY > 0 || result.GAVE_UP > 0));
           if (busy) logger.info({ job: job.name, result }, `job ${job.name} did work`);
         } catch (err) {
           // One failing job must not stop the others.
