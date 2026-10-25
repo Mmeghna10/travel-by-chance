@@ -7,13 +7,24 @@ const InventoryNight = require("../models/inventoryNight.js");
 const { quote } = require("../modules/bookings/pricing.js");
 const { cachedListings } = require("../modules/cache/listingCache.js");
 const { createGeocoder, placeQuery, NOT_FOUND } = require("../modules/listings/geocode.js");
-const lookUpPlace = createGeocoder();
+let lookUpPlace = createGeocoder();
+/** For tests: replace the Mapbox lookup. */
+module.exports.setPlaceLookup = (fn) => {
+  lookUpPlace = fn || createGeocoder();
+};
 
 const MAX_QUERY_LENGTH = 100;
 
-async function geocode({ location, country }) {
+// The map pin: the street address if the host gave one and it's found,
+// else the city. Returns { geometry, precision }.
+async function geocode({ address, location, country }) {
+  if (address && address.trim()) {
+    const exact = await lookUpPlace(`${address.trim()}, ${location}`, { country });
+    if (exact) return { geometry: exact, precision: "address" };
+  }
   // Fallback to [0,0] if location not found (npm run fix:locations retries these)
-  return (await lookUpPlace(placeQuery({ location, country }), { country })) || { type: "Point", coordinates: NOT_FOUND };
+  const city = await lookUpPlace(placeQuery({ location, country }), { country });
+  return { geometry: city || { type: "Point", coordinates: NOT_FOUND }, precision: "city" };
 }
 
 
@@ -128,7 +139,12 @@ module.exports.createListing = async (req, res, next) => {
   newListing.owner = req.user._id;
   newListing.image = { url, filename };
 
-  newListing.geometry = await geocode(req.body.listing);
+  const pin = await geocode(req.body.listing);
+  newListing.geometry = pin.geometry;
+  newListing.locationPrecision = pin.precision;
+  if (req.body.listing.address && pin.precision === "city") {
+    req.flash("error", "We couldn't find that street address, so the map shows the city for now. You can correct it by editing the listing.");
+  }
 
   await newListing.save();
   req.flash("success", "🎉 New listing created successfully!");
@@ -154,12 +170,18 @@ module.exports.updateListing = async (req, res) => {
   const { image, ...fields } = req.body.listing;
   const listing = await Listing.findById(id);
 
-  const locationChanged = fields.location !== listing.location || fields.country !== listing.country;
+  const locationChanged =
+    fields.location !== listing.location || fields.country !== listing.country || (fields.address || "") !== (listing.address || "");
   listing.set(fields);
   // Unticked checkboxes aren't sent at all, so "none ticked" means none.
   listing.amenities = [].concat(fields.amenities || []);
   if (locationChanged) {
-    listing.geometry = await geocode(fields);
+    const pin = await geocode(fields);
+    listing.geometry = pin.geometry;
+    listing.locationPrecision = pin.precision;
+    if (fields.address && pin.precision === "city") {
+      req.flash("error", "We couldn't find that street address, so the map shows the city for now.");
+    }
   }
   if (req.file) {
     listing.image = { url: req.file.path, filename: req.file.filename };

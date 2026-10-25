@@ -235,3 +235,11 @@ test("an early start doesn't mean waiting outside: leave the hotel later instead
   const open = planWindow({ start: t("10:00"), end: t("12:00"), places: [place("Open")], travel });
   assert.equal(open.leaveHotelAt, t("10:00"));
 });
+
+test("newer curated entries: closed museum, closed days, same name in two cities", () => {
+  const indianMuseum = applyCurated({ name: "Indian Museum", lat: 22.558, lng: 88.351, score: 3 });
+  assert.deepEqual(openIntervals(indianMuseum.openingHours, "2026-11-05").intervals, [], "never scheduled while closed");
+  assert.deepEqual(openIntervals("Tu-Su 10:00-18:30; Mo off", "2026-11-02").intervals, [], "Akshardham closed on Monday");
+  assert.equal(applyCurated({ name: "City Palace", lat: 24.576, lng: 73.683, score: 4 }).openingHours, "09:30-17:30", "Udaipur");
+  assert.equal(applyCurated({ name: "City Palace", lat: 26.926, lng: 75.824, score: 4, hoursSource: "typical" }).hoursSource, "typical", "Jaipur's City Palace isn't Udaipur's");
+});

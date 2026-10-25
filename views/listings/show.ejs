@@ -94,7 +94,7 @@
       <h2 class="show-section-heading">Where you'll be</h2>
       <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
         <i class="fa-solid fa-location-dot" style="color: var(--primary);"></i>&nbsp;
-        <%= listing.location %>, <%= listing.country %> &nbsp;·&nbsp; Map shows the area &nbsp;·&nbsp; Check-in from <%= listing.checkInTime || "12:00" %>
+        <%= listing.location %>, <%= listing.country %> &nbsp;·&nbsp; <% if (listing.locationPrecision === "address" && listing.address) { %><%= listing.address %><% } else { %>Map shows the area<% } %> &nbsp;·&nbsp; Check-in from <%= listing.checkInTime || "12:00" %>
       </p>
       <div id="map"></div>
     </div>

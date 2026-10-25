@@ -38,6 +38,10 @@ const listingSchema = new Schema({
   amenities: { type: [{ type: String, enum: AMENITY_KEYS }], default: [] },
   location: String,
   country: String,
+  // Optional street address. When set (and found), the map pin is the
+  // building itself; otherwise it's the city centre.
+  address: { type: String, trim: true, maxlength: 200 },
+  locationPrecision: { type: String, enum: ["address", "city"], default: "city" },
   reviews:[
     {
       type: Schema.Types.ObjectId,

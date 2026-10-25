@@ -7,6 +7,7 @@ module.exports.listingSchema =Joi.object({
         title: Joi.string().required(),
         description: Joi.string().required(),
         location: Joi.string().required(),
+        address: Joi.string().trim().max(200).allow(""),
         // TravelByChance lists stays in India only (prices are in rupees).
         country: Joi.string().trim().valid("India").required().messages({ "any.only": "TravelByChance lists stays in India only." }),
         price: Joi.number().required().min(0),

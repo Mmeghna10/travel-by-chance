@@ -84,6 +84,13 @@
         <div class="invalid-feedback">Location should be valid!</div>
       </div>
 
+      <!-- Street address (optional) -->
+      <div class="mb-4">
+        <label for="address" class="form-label-pro">Street address <span style="font-weight:400;color:var(--text-subtle);">(optional)</span></label>
+        <input name="listing[address]" id="address" value="<%= listing.address || '' %>" maxlength="200" placeholder="e.g. 12 Fatehabad Road, Tajganj" type="text" class="form-control form-control-pro" />
+        <div class="form-text">Shown on the listing and used for the exact map pin and the arrival-day planner. Leave empty to show the city area.</div>
+      </div>
+
       <!-- Category -->
       <div class="mb-4">
         <label for="category" class="form-label-pro">Category <span style="color: var(--primary);">*</span></label>

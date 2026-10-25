@@ -144,8 +144,8 @@ Someone else's booking gets `404`, as everywhere else. Place names are untrusted
 ## 6. Limitations and next steps
 
 - **Coverage:** India only, because of one time zone. Other countries need the hotel's time zone, which is a small change once listings store it.
-- **Hours:** most attractions have no published hours on OpenStreetMap. The curated list covers 14 famous places in 7 cities and should grow, one official source at a time.
-- **Hotel location:** listings store a city-level map location (geocoded from city and country), not the exact address, so the first and last legs are approximate.
+- **Hours:** most attractions have no published hours on OpenStreetMap. The curated list covers 20 places in 10 cities and should grow, one official source at a time. One of them, Kolkata's Indian Museum, is marked closed, because its own site says its galleries are closed during 2026.
+- **Hotel location:** hosts can add a street address; then the pin and the planner use the building. Listings without one use the city centre, and the plan says the first and last legs are approximate.
 - **Scoring:** places are scored by kind and notability (Wikidata/Wikipedia tags). Ratings or the guest's interests (temples, museums, nature) would personalise it.
 - **Splitting the day:** the morning is planned first, then the afternoon. Planning both together could occasionally do slightly better.
 - **Public transport:** times are estimates. A transit-routing API would replace them.

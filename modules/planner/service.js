@@ -148,7 +148,11 @@ async function arrivalPlan({ booking, listing, prefs, deps = {} }) {
     notes.push(`${unconfirmed} place(s) have no published opening hours on OpenStreetMap; they're planned within typical hours (9 am-6 pm). Check before going.`);
   }
   if (day.before) notes.push("Before check-in, we assume you leave your luggage at the hotel first (15 min); most hotels hold bags for early arrivals.");
-  notes.push("Distances are measured from the stay's map location. Opening hours change; check them before you go.");
+  notes.push(
+    listing.locationPrecision === "address"
+      ? "Distances are measured from the stay's address. Opening hours change; check them before you go."
+      : "Distances are measured from the city centre (this stay has no street address yet), so the first and last legs are approximate. Opening hours change; check them before you go.",
+  );
 
   return {
     status: "ready",

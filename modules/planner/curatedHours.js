@@ -23,6 +23,9 @@ const CITIES = {
   mumbai: [19.0778, 72.8787],
   pune: [18.5157, 73.8563],
   kolkata: [22.5568, 88.3547],
+  bangalore: [12.9791, 77.5913],
+  udaipur: [24.5822, 73.6966],
+  varanasi: [25.3367, 83.007],
 };
 
 const CURATED = [
@@ -123,6 +126,49 @@ const CURATED = [
     openingHours: "Tu-Su 10:00-18:00; Mo off",
     visitMinutes: 90,
     source: "https://victoriamemorial-cal.org/visit/index (gallery 10 am-6 pm, closed Mondays)",
+  },
+  {
+    city: "kolkata",
+    names: ["Indian Museum"],
+    // Closed, not "unknown": the museum's own site says so. Don't send people there.
+    openingHours: "off",
+    visitMinutes: 120,
+    source: "https://indianmuseumkolkata.org/visitors-information/ (galleries closed to the public during 2026)",
+  },
+  {
+    city: "delhi",
+    names: ["Akshardham", "Swaminarayan Akshardham", "Akshardham Temple"],
+    openingHours: "Tu-Su 10:00-18:30; Mo off",
+    visitMinutes: 150,
+    source: "https://akshardham.com/visitor-info/ (Tue-Sun, first entry 10 am, last entry 6:30 pm; closed Mondays)",
+  },
+  {
+    city: "bangalore",
+    names: ["Lalbagh", "Lal Bagh", "Lalbagh Botanical Garden", "Lal Bagh Botanical Garden"],
+    openingHours: "07:00-18:00",
+    visitMinutes: 90,
+    source: "karnatakatourism.org (6-6, 7-6) and incredibleindia.gov.in (6-7): narrowest overlap used",
+  },
+  {
+    city: "bangalore",
+    names: ["Bangalore Palace", "Bengaluru Palace"],
+    openingHours: "10:00-17:30",
+    visitMinutes: 75,
+    source: "https://karnatakatourism.org/en/attractions/bangalore-palace/ (10 am-5:30 pm)",
+  },
+  {
+    city: "udaipur",
+    names: ["City Palace", "City Palace Udaipur", "City Palace, Udaipur"],
+    openingHours: "09:30-17:30",
+    visitMinutes: 120,
+    source: "https://www.incredibleindia.gov.in/en/rajasthan/udaipur/city-palace (9:30 am-5:30 pm)",
+  },
+  {
+    city: "varanasi",
+    names: ["Sarnath Museum", "Archaeological Museum Sarnath", "Archaeological Museum, Sarnath"],
+    openingHours: "Sa-Th 10:00-17:00; Fr off",
+    visitMinutes: 60,
+    source: "https://www.incredibleindia.gov.in/en/uttar-pradesh/varanasi/sarnath-museum (10 am-5 pm, closed Fridays)",
   },
 ];
 
