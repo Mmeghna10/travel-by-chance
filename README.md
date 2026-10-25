@@ -297,7 +297,7 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 ## Known limitations
 
 - **Razorpay:** tested against a simulator with real signatures, and Checkout loads in the browser, but a **live sandbox payment hasn't been run** (account onboarding needed KYC). See [docs/05](docs/05-milestone-4-payments.md#-pending-live-razorpay-sandbox-check).
-- **Free hosting tier:** the Render instance sleeps when idle (about a minute to wake), and the background jobs run inside the web process, catching up after it wakes. Atlas's free tier has no automatic backups; see [docs/08](docs/08-milestone-7-ci-cd.md#backups-and-restore).
+- **Free hosting tier:** the Render instance sleeps when idle (about a minute to wake), and the background jobs run inside the web process, catching up after it wakes. Atlas's free tier has no automatic backups, so a nightly GitHub Actions job takes an encrypted, restore-tested backup ([docs/12](docs/12-backups.md)).
 - **Live payments** need a Razorpay account activated with your own KYC; the code side is ready ([docs/10](docs/10-redis-and-going-live.md#going-live-with-real-payments)). The policy pages are plain-language descriptions of the app's behaviour, not legal advice.
 - Full refunds only; no partial-refund policy; no admin screen for `REFUND_FAILED` bookings.
 - Changing booking dates isn't supported (cancel and rebook).
@@ -318,6 +318,7 @@ Actions are pinned to commit SHAs, and the workflow token is read-only by defaul
 | [07 Observability](docs/07-milestone-6-observability.md) | Logs, metrics, load testing and findings |
 | [08 CI/CD](docs/08-milestone-7-ci-cd.md) | Pipeline, deployment plan |
 | [09 Interview prep](docs/09-interview-prep.md) | How to explain this project |
+| [12 Backups](docs/12-backups.md) | Nightly encrypted backups, restore test, how to restore |
 | [11 Arrival-day planner](docs/11-arrival-day-planner.md) | Places, opening hours, travel times, exact scheduling |
 | [10 Redis & going live](docs/10-redis-and-going-live.md) | Shared rate limits, listing cache, policy pages, live-payment checklist |
 

@@ -1,0 +1,134 @@
+# Nightly backup of the production database (MongoDB Atlas free tier has no
+# automatic backups).
+#
+#   1. mongodump the database (read-only user), compressed
+#   2. encrypt it with a passphrase (AES-256, PBKDF2): the repository is
+#      public, so an unencrypted dump here would expose users' data
+#   3. TEST THE RESTORE: decrypt and mongorestore into a throwaway MongoDB,
+#      and check the data came back. A backup that can't be restored isn't
+#      a backup.
+#   4. keep the encrypted file as a workflow artifact for 30 days
+#
+# Needs two repository secrets (Settings -> Secrets and variables -> Actions):
+#   BACKUP_DATABASE_URL  connection string of a READ-ONLY database user
+#   BACKUP_PASSPHRASE    long random passphrase (20+ characters). Keep a copy
+#                        somewhere safe: without it the backups can't be opened.
+#
+# On pull requests that change this file it runs as a SELF-TEST: the same
+# steps against a throwaway database with sample data, so the pipeline is
+# proven before it touches production. Restore steps: docs/12-backups.md
+
+name: Database backup
+
+on:
+  schedule:
+    - cron: "30 20 * * *" # 02:00 IST every night
+  workflow_dispatch:
+  pull_request:
+    paths: [".github/workflows/backup.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-backup-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Dump, encrypt, test restore, store
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      MONGO_IMAGE: mongo:7.0.45-jammy # same version as compose.yaml
+      SELF_TEST: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Self-test source database (pull requests only)
+        if: env.SELF_TEST == 'true'
+        run: |
+          docker run -d --name source -p 127.0.0.1:27018:27017 "$MONGO_IMAGE" >/dev/null
+          for i in $(seq 1 30); do docker exec source mongosh --quiet --eval "db.runCommand({ ping: 1 }).ok" >/dev/null 2>&1 && break; sleep 2; done
+          docker exec source mongosh --quiet travelbychance --eval '
+            db.users.insertMany([{ username: "a" }, { username: "b" }]);
+            db.listings.insertMany([{ title: "Goa Villa" }, { title: "Agra Room" }, { title: "Pune Flat" }]);
+            db.bookings.insertOne({ status: "CONFIRMED" });'
+          echo "DB_URL=mongodb://127.0.0.1:27018/travelbychance" >> "$GITHUB_ENV"
+          echo "PASSPHRASE=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          echo "EXPECT_LISTINGS=3" >> "$GITHUB_ENV"
+
+      - name: Use the production secrets
+        if: env.SELF_TEST != 'true'
+        env:
+          URL_SECRET: ${{ secrets.BACKUP_DATABASE_URL }}
+          PASS_SECRET: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          {
+            echo "DB_URL=$URL_SECRET"
+            echo "PASSPHRASE=$PASS_SECRET"
+          } >> "$GITHUB_ENV"
+
+      - name: Check configuration
+        id: config
+        run: |
+          if [ -z "$DB_URL" ] || [ -z "$PASSPHRASE" ]; then
+            echo "::notice::BACKUP_DATABASE_URL / BACKUP_PASSPHRASE not set; skipping backup."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          elif [ "${#PASSPHRASE}" -lt 20 ]; then
+            echo "::error::BACKUP_PASSPHRASE must be at least 20 characters."
+            exit 1
+          else
+            echo "::add-mask::$DB_URL"
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dump the database
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          mkdir -p out
+          # Host network so the self-test can reach its source on 127.0.0.1.
+          docker run --rm --network host -e DB_URL -v "$PWD/out:/out" "$MONGO_IMAGE" \
+            sh -c 'mongodump --uri="$DB_URL" --archive=/out/db.archive --gzip --quiet'
+          ls -l out/db.archive
+
+      - name: Encrypt
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt \
+            -in out/db.archive -out out/db.archive.enc -pass env:PASSPHRASE
+          rm -f out/db.archive # only the encrypted copy is kept
+          ls -l out/db.archive.enc
+          sha256sum out/db.archive.enc
+
+      - name: Test the restore (decrypt + restore into a throwaway MongoDB)
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in out/db.archive.enc -out restore.archive -pass env:PASSPHRASE
+          docker run -d --name restore-test -v "$PWD:/work" "$MONGO_IMAGE" >/dev/null
+          for i in $(seq 1 30); do docker exec restore-test mongosh --quiet --eval "db.runCommand({ ping: 1 }).ok" >/dev/null 2>&1 && break; sleep 2; done
+          docker exec restore-test mongorestore --archive=/work/restore.archive --gzip --quiet
+          docker exec -e EXPECT_LISTINGS="${EXPECT_LISTINGS:-}" restore-test mongosh --quiet --eval '
+            const names = db.adminCommand({ listDatabases: 1, nameOnly: true }).databases.map((d) => d.name).filter((n) => !["admin", "local", "config"].includes(n));
+            if (names.length === 0) { print("RESTORE CHECK FAILED: no database restored"); quit(1); }
+            const restored = db.getSiblingDB(names[0]);
+            const counts = {};
+            for (const c of ["users", "listings", "bookings"]) counts[c] = restored.getCollection(c).countDocuments();
+            print("restored database " + restored.getName() + ": " + JSON.stringify(counts));
+            const expected = process.env.EXPECT_LISTINGS;
+            if (counts.listings === 0 || counts.users === 0) { print("RESTORE CHECK FAILED: empty collections"); quit(1); }
+            if (expected && counts.listings !== Number(expected)) { print("RESTORE CHECK FAILED: expected " + expected + " listings"); quit(1); }'
+          rm -f restore.archive
+          docker rm -f restore-test >/dev/null
+
+      - name: Store the encrypted backup (30 days)
+        if: steps.config.outputs.enabled == 'true' && env.SELF_TEST != 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: out/db.archive.enc
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Clean up
+        if: always()
+        run: docker rm -f source restore-test >/dev/null 2>&1 || true
