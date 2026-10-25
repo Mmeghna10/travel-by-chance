@@ -35,17 +35,9 @@
               </button>
               <ul class="dropdown-menu custom-select-dropdown w-100 mt-2" aria-labelledby="heroCategoryDropdown">
                 <li><a class="dropdown-item active" href="#" onclick="selectHeroCategory('', 'All Categories', this, event)"><i class="fa-solid fa-layer-group me-2" style="color:var(--primary);"></i>All Categories</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Trending', 'Trending', this, event)"><i class="fa-solid fa-fire me-2" style="color:#B26335;"></i>Trending</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Rooms', 'Rooms', this, event)"><i class="fa-solid fa-bed me-2" style="color:#7A3A14;"></i>Rooms</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Iconic Cities', 'Iconic Cities', this, event)"><i class="fa-solid fa-mountain-city me-2" style="color:#3B3A1E;"></i>Iconic Cities</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Mountains', 'Mountains', this, event)"><i class="fa-solid fa-mountain me-2" style="color:#4F4E28;"></i>Mountains</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Castles', 'Castles', this, event)"><i class="fa-solid fa-chess-rook me-2" style="color:#5D2C0C;"></i>Castles</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Amazing Pools', 'Pools', this, event)"><i class="fa-solid fa-person-swimming me-2" style="color:#2E6E65;"></i>Amazing Pools</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Camping', 'Camping', this, event)"><i class="fa-solid fa-campground me-2" style="color:#3B5C2A;"></i>Camping</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Farms', 'Farms', this, event)"><i class="fa-solid fa-seedling me-2" style="color:#6B5220;"></i>Farms</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Arctic', 'Arctic', this, event)"><i class="fa-solid fa-snowflake me-2" style="color:#3A5E7A;"></i>Arctic</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Domes', 'Domes', this, event)"><i class="fa-solid fa-igloo me-2" style="color:#5E3E2C;"></i>Domes</a></li>
-                <li><a class="dropdown-item" href="#" onclick="selectHeroCategory('Boats', 'Boats', this, event)"><i class="fa-solid fa-sailboat me-2" style="color:#2A4E78;"></i>Boats</a></li>
+                <% CATEGORIES.filter((c) => categoriesInUse.includes(c.name)).forEach((c) => { %>
+                <li><a class="dropdown-item" href="#" data-category="<%= c.name %>" data-label="<%= c.label %>" onclick="selectHeroCategory(this.dataset.category, this.dataset.label, this, event)"><i class="fa-solid <%= c.icon %> me-2" style="color:<%= c.color %>;"></i><%= c.name %></a></li>
+                <% }); %>
               </ul>
             </div>
           </div>

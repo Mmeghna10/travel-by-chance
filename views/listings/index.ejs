@@ -6,7 +6,7 @@
     <div class="row align-items-center">
       <div class="col-lg-7">
         <div style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(221,163,92,0.18);color:var(--amber);border:1px solid rgba(221,163,92,0.35);padding:0.3rem 0.85rem;border-radius:var(--radius-pill);font-size:0.75rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:1rem;">
-          <i class="fa-solid fa-star"></i> <%= allListings.length %>+ curated stays
+          <i class="fa-solid fa-star"></i> <%= allListings.length %> <%= allListings.length === 1 ? "stay" : "stays" %> across India
         </div>
         <h1 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3.2rem);font-weight:600;color:var(--cream);line-height:1.1;letter-spacing:-0.01em;margin-bottom:0.75rem;">
           Find Your Perfect Stay<br>
@@ -26,45 +26,11 @@
     <a href="/listings" class="category-pill <%= (!category && !searchQuery) ? 'active' : '' %>" style="text-decoration:none;">
       <i class="fa-solid fa-house" style="font-size:0.85rem;"></i> All Stays
     </a>
-    <a href="/listings?category=Trending" class="category-pill <%= category === 'Trending' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-fire" style="font-size:0.85rem;color:<%= category === 'Trending' ? 'rgba(255,255,255,0.75)' : '#B26335' %>;"></i> Trending
+    <% CATEGORIES.filter((c) => categoriesInUse.includes(c.name)).forEach((c) => { %>
+    <a href="/listings?category=<%= encodeURIComponent(c.name) %>" class="category-pill <%= category === c.name ? 'active' : '' %>" style="text-decoration:none;">
+      <i class="fa-solid <%= c.icon %>" style="font-size:0.85rem;color:<%= category === c.name ? 'rgba(255,255,255,0.75)' : c.color %>;"></i> <%= c.label %>
     </a>
-    <a href="/listings?category=Rooms" class="category-pill <%= category === 'Rooms' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-bed" style="font-size:0.85rem;color:<%= category === 'Rooms' ? 'rgba(255,255,255,0.75)' : '#7A3A14' %>;"></i> Rooms
-    </a>
-    <a href="/listings?category=Iconic Cities" class="category-pill <%= category === 'Iconic Cities' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-mountain-city" style="font-size:0.85rem;color:<%= category === 'Iconic Cities' ? 'rgba(255,255,255,0.75)' : '#3B3A1E' %>;"></i> Iconic Cities
-    </a>
-    <a href="/listings?category=Mountains" class="category-pill <%= category === 'Mountains' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-mountain" style="font-size:0.85rem;color:<%= category === 'Mountains' ? 'rgba(255,255,255,0.75)' : '#4F4E28' %>;"></i> Mountains
-    </a>
-    <a href="/listings?category=Castles" class="category-pill <%= category === 'Castles' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-chess-rook" style="font-size:0.85rem;color:<%= category === 'Castles' ? 'rgba(255,255,255,0.75)' : '#5D2C0C' %>;"></i> Castles
-    </a>
-    <a href="/listings?category=Amazing Pools" class="category-pill <%= category === 'Amazing Pools' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-person-swimming" style="font-size:0.85rem;color:<%= category === 'Amazing Pools' ? 'rgba(255,255,255,0.75)' : '#2E6E65' %>;"></i> Pools
-    </a>
-    <a href="/listings?category=Camping" class="category-pill <%= category === 'Camping' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-campground" style="font-size:0.85rem;color:<%= category === 'Camping' ? 'rgba(255,255,255,0.75)' : '#3B5C2A' %>;"></i> Camping
-    </a>
-    <a href="/listings?category=Farms" class="category-pill <%= category === 'Farms' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-seedling" style="font-size:0.85rem;color:<%= category === 'Farms' ? 'rgba(255,255,255,0.75)' : '#6B5220' %>;"></i> Farms
-    </a>
-    <a href="/listings?category=Arctic" class="category-pill <%= category === 'Arctic' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-snowflake" style="font-size:0.85rem;color:<%= category === 'Arctic' ? 'rgba(255,255,255,0.75)' : '#3A5E7A' %>;"></i> Arctic
-    </a>
-    <a href="/listings?category=Domes" class="category-pill <%= category === 'Domes' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-igloo" style="font-size:0.85rem;color:<%= category === 'Domes' ? 'rgba(255,255,255,0.75)' : '#5E3E2C' %>;"></i> Domes
-    </a>
-    <a href="/listings?category=Boats" class="category-pill <%= category === 'Boats' ? 'active' : '' %>" style="text-decoration:none;">
-      <i class="fa-solid fa-sailboat" style="font-size:0.85rem;color:<%= category === 'Boats' ? 'rgba(255,255,255,0.75)' : '#2A4E78' %>;"></i> Boats
-    </a>
-    <div class="tax-switch-pill ms-auto">
-      <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
-        <input class="form-check-input" type="checkbox" role="switch" id="taxToggle" style="cursor:pointer;">
-        <label class="form-check-label" for="taxToggle" style="cursor:pointer;white-space:nowrap;">Show taxes</label>
-      </div>
-    </div>
+    <% }); %>
   </div>
 </div>
 
@@ -145,7 +111,6 @@
               <div>
                 <span class="price-main-amount"><span class="price-symbol">₹</span><%= listing.price.toLocaleString("en-IN") %></span>
                 <span class="price-unit-label"> / night</span>
-                <span class="tax-gst-tag">&nbsp;+18% GST</span>
               </div>
             </div>
           </div>
@@ -156,14 +121,6 @@
 <% } %>
 
 <script>
-  const taxToggle = document.getElementById('taxToggle');
-  if (taxToggle) {
-    taxToggle.addEventListener('change', () => {
-      document.querySelectorAll('.tax-gst-tag').forEach(el => {
-        el.style.display = taxToggle.checked ? 'inline' : 'none';
-      });
-    });
-  }
   function toggleWishlist(btn) {
     const icon = btn.querySelector('i');
     const isActive = btn.classList.toggle('active');
